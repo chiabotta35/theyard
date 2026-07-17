@@ -14,3 +14,8 @@ services:
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"

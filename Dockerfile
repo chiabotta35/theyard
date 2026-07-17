@@ -14,8 +14,6 @@ COPY . .
 ARG THEYARD_VERSION=dev
 ENV THEYARD_VERSION=${THEYARD_VERSION}
 
-RUN mkdir -p /app/data
-
 EXPOSE 5000
 
-CMD ["sh", "-c", "mkdir -p /app/data && python seed.py && exec gunicorn -b 0.0.0.0:5000 -w 2 --timeout 120 wsgi:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "-w", "2", "--timeout", "120", "wsgi:app"]

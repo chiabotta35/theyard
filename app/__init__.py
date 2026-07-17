@@ -1,4 +1,5 @@
 import os
+import logging
 from pathlib import Path
 from flask import Flask
 from flask_login import LoginManager
@@ -6,6 +7,8 @@ from flask_migrate import Migrate
 
 from .config import Config
 from .models import db, User
+
+logger = logging.getLogger(__name__)
 
 _version_file = Path(__file__).resolve().parent.parent.joinpath("VERSION")
 VERSION = os.environ.get("THEYARD_VERSION") or (
@@ -20,6 +23,29 @@ login_manager.login_message_category = "warning"
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
+
+
+def _seed_admin(app):
+    with app.app_context():
+        admin_username = app.config.get("ADMIN_USERNAME", "admin")
+        admin_email = app.config.get("ADMIN_EMAIL", "admin@example.com")
+        admin_password = app.config.get("ADMIN_PASSWORD", "changeme")
+
+        existing = User.query.filter_by(username=admin_username).first()
+        if not existing:
+            admin = User(
+                username=admin_username,
+                email=admin_email,
+                is_admin=True,
+                is_owner=True,
+                is_active_user=True,
+            )
+            admin.set_password(admin_password)
+            db.session.add(admin)
+            db.session.commit()
+            logger.info("Admin user '%s' created.", admin_username)
+        else:
+            logger.info("Admin user '%s' already exists, skipping.", admin_username)
 
 
 def create_app():
@@ -54,7 +80,9 @@ def create_app():
         }
 
     with app.app_context():
-        os.makedirs("data", exist_ok=True)
+        data_dir = Path(app.instance_path).parent / "data"
+        data_dir.mkdir(parents=True, exist_ok=True)
         db.create_all()
+        _seed_admin(app)
 
     return app
