@@ -27,6 +27,28 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
+def _ensure_columns(app):
+    """Add missing columns to existing tables (SQLite doesn't support ALTER TABLE ADD COLUMN IF NOT EXISTS)."""
+    with app.app_context():
+        from sqlalchemy import text, inspect
+        inspector = inspect(db.engine)
+        additions = {
+            "tasks": [
+                ("due_date", "DATE"),
+            ],
+        }
+        for table, cols in additions.items():
+            existing = {c["name"] for c in inspector.get_columns(table)} if table in inspector.get_table_names() else set()
+            for col_name, col_type in cols:
+                if col_name not in existing:
+                    try:
+                        db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_type}"))
+                        db.session.commit()
+                        logger.info("Added column %s.%s", table, col_name)
+                    except Exception:
+                        db.session.rollback()
+
+
 def _seed_admin(app):
     with app.app_context():
         admin_username = app.config.get("ADMIN_USERNAME", "admin")
@@ -108,6 +130,7 @@ def create_app():
             db.create_all()
         except Exception:
             db.session.rollback()
+        _ensure_columns(app)
         _seed_admin(app)
 
     return app

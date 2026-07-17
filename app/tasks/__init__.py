@@ -1,11 +1,12 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SelectField, HiddenField, DateField
-from wtforms.validators import DataRequired
+from wtforms import StringField, TextAreaField, SelectField, HiddenField
+from wtforms.validators import DataRequired, Optional
 
 from ..models import db, Task, Comment, User, Label, TaskLabel, PROJECT_STATUSES, log_activity
 from ..webhooks import fire_webhook, build_task_payload, build_comment_payload
+from datetime import date
 
 tasks_bp = Blueprint("tasks", __name__, url_prefix="/tasks")
 
@@ -16,7 +17,7 @@ class TaskForm(FlaskForm):
     status = SelectField("Status", choices=[(s, s.replace("_", " ").title()) for s in ["todo", "in_progress", "review", "done"]])
     priority = SelectField("Priority", choices=[(p, p.title()) for p in ["low", "medium", "high", "critical"]])
     assignee_id = SelectField("Assignee", coerce=lambda x: int(x) if x and str(x).strip() else None)
-    due_date = DateField("Due Date", format="%Y-%m-%d", validators=[], default=None)
+    due_date = StringField("Due Date", validators=[Optional()])
     project_id = HiddenField("Project ID")
     labels = HiddenField("Labels")
 
@@ -78,7 +79,12 @@ def create_task(project_id):
         max_pos = db.session.query(db.func.max(Task.position)).filter_by(
             project_id=project_id
         ).scalar() or 0
-        due = form.due_date.data if form.due_date.data else None
+        due = None
+        if form.due_date.data:
+            try:
+                due = date.fromisoformat(form.due_date.data)
+            except (ValueError, TypeError):
+                pass
         task = Task(
             project_id=project_id,
             title=form.title.data,
@@ -129,7 +135,12 @@ def edit_task(task_id):
         task.status = form.status.data
         task.priority = form.priority.data
         task.assignee_id = form.assignee_id.data
-        task.due_date = form.due_date.data if form.due_date.data else None
+        task.due_date = None
+        if form.due_date.data:
+            try:
+                task.due_date = date.fromisoformat(form.due_date.data)
+            except (ValueError, TypeError):
+                pass
         TaskLabel.query.filter_by(task_id=task.id).delete()
         selected = form.labels.data or ""
         for lid in selected.split(","):
@@ -142,7 +153,8 @@ def edit_task(task_id):
             fire_webhook("task.status_changed", build_task_payload(task, "status_changed"))
         flash(f"Task '{task.title}' updated.", "success")
         return redirect(url_for("tasks.detail_task", task_id=task.id))
-    form.due_date.data = task.due_date
+    if task.due_date:
+        form.due_date.data = task.due_date.isoformat()
     return render_template(
         "tasks/form.html", form=form, title="Edit Task", project=task.project,
         labels=labels, existing_label_ids=existing_label_ids,
