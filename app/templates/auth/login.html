@@ -27,14 +27,12 @@
                 {{ form.password(id="password", placeholder="password") }}
                 {% for e in form.password.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
-            <div class="form-group">
-                <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.8rem;color:var(--text-secondary)">{{ form.remember() }} Remember me</label>
+            <div style="display:flex;align-items:center;gap:0.3rem;margin:-4px 0 12px">
+                {{ form.remember(style="width:14px;height:14px;margin:0") }}
+                <label for="remember" style="cursor:pointer;font-size:0.75rem;color:var(--text-secondary)">Remember me</label>
             </div>
             <button type="submit" class="btn btn-primary" style="width:100%">Sign in</button>
         </form>
-        <div class="auth-footer">
-            Don't have an account? <a href="{{ url_for('auth.register') }}">Register</a>
-        </div>
     </div>
 </div>
 {% endblock %}
