@@ -1,46 +1,58 @@
 {% extends "base.html" %}
 {% block title %}Groups — TheYard{% endblock %}
 {% block content %}
-<div class="container">
+<div class="content">
     <div class="page-header">
         <h1>Groups</h1>
-        <a href="{{ url_for('auth.admin_create_group') }}" class="btn btn-primary btn-sm">+ New Group</a>
+        <a href="{{ url_for('auth.admin_create_group') }}" class="btn btn-primary btn-sm">+ NEW GROUP</a>
     </div>
-    <div class="card" style="padding:0;overflow:hidden">
-        {% if groups %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Members</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for group in groups %}
-                <tr>
-                    <td style="font-weight:500">{{ group.name }}</td>
-                    <td style="color:var(--text-muted)">{{ group.description or '—' }}</td>
-                    <td style="font-family:var(--mono);color:var(--text-muted)">{{ group.memberships.count() }}</td>
-                    <td>
-                        <div style="display:flex;gap:0.3rem">
-                            <a href="{{ url_for('auth.admin_group_members', group_id=group.id) }}" class="btn btn-ghost btn-sm">Members</a>
-                            <a href="{{ url_for('auth.admin_edit_group', group_id=group.id) }}" class="btn btn-ghost btn-sm">Edit</a>
-                            <form method="POST" action="{{ url_for('auth.admin_delete_group', group_id=group.id) }}" style="display:inline">
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete {{ group.name }}?')">Delete</button>
-                            </form>
+    {% if groups %}
+    <div style="display:flex;flex-direction:column;gap:1rem">
+        {% for group in groups %}
+        <div class="group-card">
+            <div class="group-card-header">
+                <div style="display:flex;align-items:center;gap:0.75rem">
+                    <span class="group-card-name">{{ group.name }}</span>
+                    <span class="badge badge-viewer" style="font-size:0.6rem">{{ group.memberships.count() }} MEMBERS</span>
+                </div>
+                <div style="display:flex;gap:0.3rem">
+                    <a href="{{ url_for('auth.admin_group_members', group_id=group.id) }}" class="btn btn-ghost btn-xs">Members</a>
+                    <a href="{{ url_for('auth.admin_edit_group', group_id=group.id) }}" class="btn btn-ghost btn-xs">Edit</a>
+                    <form method="POST" action="{{ url_for('auth.admin_delete_group', group_id=group.id) }}" style="display:inline">
+                        <button type="submit" class="btn btn-danger btn-xs" onclick="return confirm('Delete {{ group.name }}?')">Delete</button>
+                    </form>
+                </div>
+            </div>
+            <div class="group-card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+                    <div>
+                        <span class="mono-label">MEMBERS</span>
+                        <div style="display:flex;gap:0.4rem;margin-top:0.5rem;flex-wrap:wrap">
+                            {% for m in group.memberships %}
+                            <div class="avatar avatar-sm" style="background:var(--primary)">{{ m.user.username[0]|upper }}</div>
+                            {% endfor %}
                         </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="empty-state" style="padding:2.5rem">
-            <p>No groups yet</p>
+                    </div>
+                    <div>
+                        <span class="mono-label">PROJECTS</span>
+                        <div style="display:flex;gap:0.3rem;margin-top:0.5rem;flex-wrap:wrap">
+                            {% for p in group.projects %}
+                            <span class="tag">{{ p.name }}</span>
+                            {% endfor %}
+                            {% if not group.projects %}
+                            <span style="color:var(--text-muted);font-size:0.75rem">None</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        {% endif %}
+        {% endfor %}
     </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No groups yet</p>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

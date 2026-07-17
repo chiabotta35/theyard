@@ -139,6 +139,7 @@ class Project(db.Model):
         db.String(20), nullable=False, default="active"
     )
     prefix = db.Column(db.String(10), nullable=False, default="")
+    color = db.Column(db.String(30), nullable=False, default="#00e676")
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     created_at = db.Column(
         db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False

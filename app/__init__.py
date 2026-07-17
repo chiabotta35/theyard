@@ -39,6 +39,7 @@ def _ensure_columns(app):
             ],
             "projects": [
                 ("prefix", "VARCHAR(10) DEFAULT ''"),
+                ("color", "VARCHAR(30) DEFAULT '#00e676'"),
             ],
             "users": [
                 ("theme", "VARCHAR(30) DEFAULT 'dark'"),

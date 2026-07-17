@@ -61,7 +61,7 @@ def login():
         if user and user.check_password(form.password.data) and user.is_active_user:
             login_user(user, remember=form.remember.data)
             next_page = request.args.get("next")
-            return redirect(next_page or url_for("projects.list_projects"))
+            return redirect(next_page or url_for("dashboard.index"))
         flash("Invalid username or password.", "danger")
     return render_template("auth/login.html", form=form)
 

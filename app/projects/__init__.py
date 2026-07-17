@@ -13,6 +13,7 @@ projects_bp = Blueprint("projects", __name__, url_prefix="/projects")
 class ProjectForm(FlaskForm):
     name = StringField("Project Name", validators=[DataRequired()])
     prefix = StringField("Prefix", validators=[Optional()])
+    color = StringField("Color", default="#00e676")
     description = TextAreaField("Description")
     status = SelectField("Status", choices=[(s, s.replace("_", " ").title()) for s in ["draft", "active", "archived"]])
 
@@ -64,6 +65,7 @@ def create_project():
         project = Project(
             name=form.name.data,
             prefix=form.prefix.data.strip().upper() if form.prefix.data else "",
+            color=form.color.data or "#00e676",
             description=form.description.data,
             status=form.status.data,
             created_by=current_user.id,
@@ -113,6 +115,7 @@ def edit_project(project_id):
     if form.validate_on_submit():
         project.name = form.name.data
         project.prefix = form.prefix.data.strip().upper() if form.prefix.data else ""
+        project.color = form.color.data or "#00e676"
         project.description = form.description.data
         project.status = form.status.data
         db.session.commit()

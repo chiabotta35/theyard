@@ -1,77 +1,64 @@
 {% extends "base.html" %}
 {% block title %}Webhooks — TheYard{% endblock %}
 {% block content %}
-<div class="container">
+<div class="content">
     <div class="page-header">
         <h1>Webhooks</h1>
-        <a href="{{ url_for('webhooks.create_webhook') }}" class="btn btn-primary btn-sm">+ New Webhook</a>
+        <a href="{{ url_for('webhooks.create_webhook') }}" class="btn btn-primary btn-sm">+ ADD WEBHOOK</a>
     </div>
 
     {% if webhooks %}
-    <div class="card" style="padding:0;overflow:hidden">
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>URL</th>
-                    <th>Events</th>
-                    <th>Status</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for wh in webhooks %}
-                <tr>
-                    <td style="font-weight:500">{{ wh.name }}</td>
-                    <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;color:var(--text-muted);font-family:var(--mono);font-size:0.7rem">{{ wh.url }}</td>
-                    <td style="max-width:300px">
-                        {% for e in wh.get_events_list() %}
-                        <span class="badge badge-in_progress" style="margin:1px">{{ e }}</span>
-                        {% endfor %}
-                    </td>
-                    <td>{% if wh.is_active %}<span style="color:var(--success);font-size:0.75rem">Active</span>{% else %}<span style="color:var(--text-muted);font-size:0.75rem">Paused</span>{% endif %}</td>
-                    <td>
-                        <div style="display:flex;gap:0.3rem">
-                            <form method="POST" action="{{ url_for('webhooks.test_webhook', webhook_id=wh.id) }}" style="display:inline">
-                                <button type="submit" class="btn btn-ghost btn-sm">Test</button>
-                            </form>
-                            <a href="{{ url_for('webhooks.edit_webhook', webhook_id=wh.id) }}" class="btn btn-ghost btn-sm">Edit</a>
-                            <form method="POST" action="{{ url_for('webhooks.delete_webhook', webhook_id=wh.id) }}" style="display:inline">
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete webhook?')">Delete</button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    {% for wh in webhooks %}
+    <div class="webhook-card">
+        <div style="display:flex;align-items:center;gap:0.75rem;flex:1;min-width:0">
+            <div class="webhook-status-dot {% if wh.is_active %}active{% else %}inactive{% endif %}"></div>
+            <div class="webhook-info">
+                <div class="webhook-name">{{ wh.name }}</div>
+                <div class="webhook-url">{{ wh.url }}</div>
+                <div class="webhook-events">
+                    {% for e in wh.get_events_list() %}
+                    <span class="tag">{{ e }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div style="display:flex;gap:0.3rem;flex-shrink:0">
+            <form method="POST" action="{{ url_for('webhooks.test_webhook', webhook_id=wh.id) }}" style="display:inline">
+                <button type="submit" class="btn btn-ghost btn-xs">Test</button>
+            </form>
+            <a href="{{ url_for('webhooks.edit_webhook', webhook_id=wh.id) }}" class="btn btn-ghost btn-xs">Edit</a>
+            <form method="POST" action="{{ url_for('webhooks.delete_webhook', webhook_id=wh.id) }}" style="display:inline">
+                <button type="submit" class="btn btn-danger btn-xs" onclick="return confirm('Delete webhook?')">Delete</button>
+            </form>
+        </div>
     </div>
+    {% endfor %}
     {% else %}
-    <div class="card empty-state">
+    <div class="empty-state">
         <p>No webhooks configured</p>
-        <p style="font-size:0.8rem;margin-top:0.25rem">Connect to Discord, Slack, or any JSON endpoint</p>
+        <p style="font-size:0.75rem;margin-top:0.25rem;color:var(--text-muted)">Connect to Discord, Slack, or any JSON endpoint</p>
     </div>
     {% endif %}
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;max-width:700px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:1rem;max-width:700px">
         <div class="card">
-            <h3>Events</h3>
-            <table>
+            <h3 style="margin-bottom:0.75rem">Events</h3>
+            <table class="data-table">
                 <thead><tr><th>Event</th><th>When</th></tr></thead>
                 <tbody>
-                    <tr><td><code style="font-family:var(--mono);font-size:0.75rem">task.created</code></td><td style="color:var(--text-muted);font-size:0.75rem">Task created</td></tr>
-                    <tr><td><code style="font-family:var(--mono);font-size:0.75rem">task.updated</code></td><td style="color:var(--text-muted);font-size:0.75rem">Task edited</td></tr>
-                    <tr><td><code style="font-family:var(--mono);font-size:0.75rem">task.status_changed</code></td><td style="color:var(--text-muted);font-size:0.75rem">Task moved</td></tr>
-                    <tr><td><code style="font-family:var(--mono);font-size:0.75rem">comment.created</code></td><td style="color:var(--text-muted);font-size:0.75rem">Comment added</td></tr>
-                    <tr><td><code style="font-family:var(--mono);font-size:0.75rem">project.created</code></td><td style="color:var(--text-muted);font-size:0.75rem">Project created</td></tr>
-                    <tr><td><code style="font-family:var(--mono);font-size:0.75rem">project.updated</code></td><td style="color:var(--text-muted);font-size:0.75rem">Project edited</td></tr>
+                    <tr><td><span class="mono-label">task.created</span></td><td>Task created</td></tr>
+                    <tr><td><span class="mono-label">task.updated</span></td><td>Task edited</td></tr>
+                    <tr><td><span class="mono-label">task.status_changed</span></td><td>Task moved</td></tr>
+                    <tr><td><span class="mono-label">comment.created</span></td><td>Comment added</td></tr>
+                    <tr><td><span class="mono-label">project.created</span></td><td>Project created</td></tr>
+                    <tr><td><span class="mono-label">project.updated</span></td><td>Project edited</td></tr>
                 </tbody>
             </table>
         </div>
         <div class="card">
-            <h3>Discord Setup</h3>
+            <h3 style="margin-bottom:0.75rem">Discord Setup</h3>
             <p style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6">
-                1. Server Settings → Integrations → Webhooks<br>
+                1. Server Settings - Integrations - Webhooks<br>
                 2. Create a webhook, copy the URL<br>
                 3. Paste in TheYard, pick events, save<br>
                 4. Click <strong>Test</strong> to verify

@@ -1,65 +1,78 @@
 {% extends "base.html" %}
 {% block title %}Permissions — TheYard{% endblock %}
 {% block content %}
-<div class="container">
+<div class="content">
     <div class="page-header">
-        <h1>Permissions <span style="color:var(--text-muted);font-weight:400;font-size:0.85rem">{{ project.name }}</span></h1>
+        <h1>Permissions <span class="mono-label">{{ project.name }}</span></h1>
         <a href="{{ url_for('projects.detail_project', project_id=project.id) }}" class="btn btn-ghost btn-sm">Back</a>
     </div>
 
     <div class="card" style="max-width:650px">
-        <h3>Add Permission</h3>
-        <form method="POST" action="{{ url_for('projects.add_permission', project_id=project.id) }}" style="display:flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap">
-            <div class="form-group" style="margin-bottom:0;flex:0 0 110px">
-                <label>Type</label>
-                <select name="target_type" id="target_type" onchange="updateTargets()" style="width:100%;padding:0.5rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:0.85rem">
-                    <option value="user">User</option>
-                    <option value="group">Group</option>
-                </select>
-            </div>
-            <div class="form-group" style="margin-bottom:0;flex:1;min-width:140px">
-                <label>Target</label>
-                <select name="target_id" id="target_id" style="width:100%;padding:0.5rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:0.85rem">
-                    {% for u in users %}<option value="{{ u.id }}" data-type="user">{{ u.username }}</option>{% endfor %}
-                    {% for g in groups %}<option value="{{ g.id }}" data-type="group">{{ g.name }}</option>{% endfor %}
-                </select>
-            </div>
-            <div class="form-group" style="margin-bottom:0;flex:0 0 110px">
-                <label>Permission</label>
-                <select name="permission_level" style="width:100%;padding:0.5rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:0.85rem">
-                    <option value="viewer">Viewer</option>
-                    <option value="editor">Editor</option>
-                    <option value="admin">Admin</option>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary btn-sm">Add</button>
-        </form>
+        <div class="card-header">
+            <span class="mono-label">Add Permission</span>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('projects.add_permission', project_id=project.id) }}" style="display:flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap">
+                <div class="form-group" style="margin-bottom:0;flex:0 0 110px">
+                    <label class="form-label">Type</label>
+                    <select name="target_type" id="target_type" onchange="updateTargets()" class="mono-input">
+                        <option value="user">User</option>
+                        <option value="group">Group</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0;flex:1;min-width:140px">
+                    <label class="form-label">Target</label>
+                    <select name="target_id" id="target_id" class="mono-input">
+                        {% for u in users %}<option value="{{ u.id }}" data-type="user">{{ u.username }}</option>{% endfor %}
+                        {% for g in groups %}<option value="{{ g.id }}" data-type="group">{{ g.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0;flex:0 0 110px">
+                    <label class="form-label">Permission</label>
+                    <select name="permission_level" class="mono-input">
+                        <option value="viewer">Viewer</option>
+                        <option value="editor">Editor</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Add</button>
+            </form>
+        </div>
     </div>
 
-    <div class="card" style="max-width:650px;padding:0;overflow:hidden">
-        <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--border)">
-            <h3>Current Permissions <span style="color:var(--text-muted);font-weight:400">({{ permissions|length }})</span></h3>
+    <div class="card" style="max-width:650px">
+        <div class="card-header">
+            <span class="mono-label">Current Permissions ({{ permissions|length }})</span>
         </div>
         {% if permissions %}
-        <table>
-            <thead><tr><th>Target</th><th>Type</th><th>Level</th><th></th></tr></thead>
-            <tbody>
-                {% for p in permissions %}
-                <tr>
-                    <td style="font-weight:500">{{ p.user.username if p.user else p.group.name }}</td>
-                    <td style="color:var(--text-muted)">{{ 'User' if p.user_id else 'Group' }}</td>
-                    <td><span class="badge badge-{{ p.permission_level }}">{{ p.permission_level }}</span></td>
-                    <td>
-                        <form method="POST" action="{{ url_for('projects.remove_permission', project_id=project.id, perm_id=p.id) }}" style="display:inline">
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Remove?')">Remove</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="card-body" style="padding:0">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th><span class="mono-label">Target</span></th>
+                        <th><span class="mono-label">Type</span></th>
+                        <th><span class="mono-label">Level</span></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in permissions %}
+                    <tr>
+                        <td>{{ p.user.username if p.user else p.group.name }}</td>
+                        <td><span class="mono-label">{{ 'User' if p.user_id else 'Group' }}</span></td>
+                        <td><span class="badge badge-{{ p.permission_level }}">{{ p.permission_level }}</span></td>
+                        <td>
+                            <form method="POST" action="{{ url_for('projects.remove_permission', project_id=project.id, perm_id=p.id) }}" style="display:inline">
+                                <button type="submit" class="btn btn-danger btn-xs" onclick="return confirm('Remove?')">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
-        <div class="empty-state" style="padding:2rem"><p>No permissions configured</p></div>
+        <div class="empty-state"><p>No permissions configured</p></div>
         {% endif %}
     </div>
 </div>

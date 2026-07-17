@@ -1,60 +1,72 @@
 {% extends "base.html" %}
 {% block title %}Labels — {{ project.name }} — TheYard{% endblock %}
 {% block content %}
-<div class="container">
+<div class="content">
     <div class="page-header">
-        <h1>Labels <span style="color:var(--text-muted);font-weight:400;font-size:0.85rem">{{ project.name }}</span></h1>
+        <h1>Labels <span class="mono-label">{{ project.name }}</span></h1>
         <a href="{{ url_for('projects.detail_project', project_id=project.id) }}" class="btn btn-ghost btn-sm">Back</a>
     </div>
 
     <div class="card" style="max-width:480px">
-        <h3>Add Label</h3>
-        <form method="POST" action="{{ url_for('projects.add_label', project_id=project.id) }}">
-            {{ form.hidden_tag() }}
-            <div class="form-group">
-                <label>Name</label>
-                {{ form.name(placeholder="e.g. bug, feature, urgent") }}
-                {% for e in form.name.errors %}<div class="errors">{{ e }}</div>{% endfor %}
-            </div>
-            <div class="form-group">
-                <label>Color</label>
-                <div style="display:flex;gap:0.3rem;flex-wrap:wrap" id="color-picker">
-                    {% for c in label_colors %}
-                    <button type="button" class="color-dot {% if loop.first %}color-selected{% endif %}"
-                            style="background:{{ c }}" data-color="{{ c }}" onclick="pickColor(this)"></button>
-                    {% endfor %}
+        <div class="card-header">
+            <span class="mono-label">Add Label</span>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('projects.add_label', project_id=project.id) }}">
+                {{ form.hidden_tag() }}
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    {{ form.name(placeholder="e.g. bug, feature, urgent", class_="mono-input") }}
+                    {% for e in form.name.errors %}<div class="errors">{{ e }}</div>{% endfor %}
                 </div>
-                {{ form.color(id="color-field", style="display:none") }}
-            </div>
-            <button type="submit" class="btn btn-primary btn-sm">Create Label</button>
-        </form>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <div style="display:flex;gap:0.3rem;flex-wrap:wrap" id="color-picker">
+                        {% for c in label_colors %}
+                        <button type="button" class="color-dot {% if loop.first %}color-selected{% endif %}"
+                                style="background:{{ c }}" data-color="{{ c }}" onclick="pickColor(this)"></button>
+                        {% endfor %}
+                    </div>
+                    {{ form.color(id="color-field", style="display:none") }}
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Create Label</button>
+            </form>
+        </div>
     </div>
 
     {% if labels %}
-    <div class="card" style="padding:0;overflow:hidden;max-width:480px">
-        <table>
-            <thead><tr><th>Label</th><th>Usage</th><th></th></tr></thead>
-            <tbody>
-                {% for lbl in labels %}
-                <tr>
-                    <td>
-                        <span class="task-label" style="background:{{ lbl.color }}20;color:{{ lbl.color }};border:1px solid {{ lbl.color }}40">{{ lbl.name }}</span>
-                    </td>
-                    <td style="font-family:var(--mono);color:var(--text-muted);font-size:0.75rem">{{ lbl.label_tasks.count() }} tasks</td>
-                    <td>
-                        <form method="POST" action="{{ url_for('projects.delete_label', project_id=project.id, label_id=lbl.id) }}" style="display:inline">
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete label?')">Delete</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="card" style="max-width:480px">
+        <div class="card-body" style="padding:0">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th><span class="mono-label">Label</span></th>
+                        <th><span class="mono-label">Usage</span></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lbl in labels %}
+                    <tr>
+                        <td>
+                            <span class="task-label" style="background:{{ lbl.color }}20;color:{{ lbl.color }}">{{ lbl.name }}</span>
+                        </td>
+                        <td><span class="mono-label">{{ lbl.label_tasks.count() }} tasks</span></td>
+                        <td>
+                            <form method="POST" action="{{ url_for('projects.delete_label', project_id=project.id, label_id=lbl.id) }}" style="display:inline">
+                                <button type="submit" class="btn btn-danger btn-xs" onclick="return confirm('Delete label?')">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
     {% else %}
-    <div class="card empty-state">
+    <div class="empty-state">
         <p>No labels yet</p>
-        <p style="font-size:0.8rem;margin-top:0.25rem">Labels help categorize tasks</p>
+        <p class="mono-label" style="margin-top:0.25rem">Labels help categorize tasks</p>
     </div>
     {% endif %}
 </div>

@@ -1,73 +1,88 @@
 {% extends "base.html" %}
 {% block title %}Board: {{ project.name }} — TheYard{% endblock %}
-{% block content %}
-<div class="container-wide">
-    <div class="page-header">
-        <div style="display:flex;align-items:center;gap:0.75rem">
-            <h1>{{ project.name }}</h1>
-            <span style="color:var(--text-muted);font-size:0.8rem;font-weight:500;text-transform:uppercase;letter-spacing:0.06em">Board</span>
-        </div>
-        <div style="display:flex;gap:0.4rem">
-            <a href="{{ url_for('projects.detail_project', project_id=project.id) }}" class="btn btn-ghost btn-sm">Project</a>
-            {% set role = current_user.get_highest_project_role(project.id) %}
-            {% if role in ['admin', 'editor'] %}
-            <a href="{{ url_for('tasks.create_task', project_id=project.id) }}" class="btn btn-primary btn-sm">+ Task</a>
-            {% endif %}
-        </div>
+{% block topbar %}
+<div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+        <div class="topbar-project-dot" style="background:{{ project.color or '#00e676' }}"></div>
+        <span class="topbar-project-name">{{ project.name }}</span>
+        <span class="topbar-project-meta">Board</span>
     </div>
-
+    <div class="topbar-right">
+        {% for status_key, label in [('todo', 'To Do'), ('in_progress', 'In Progress'), ('review', 'Review'), ('done', 'Done')] %}
+        <div class="column-chip">
+            <span class="column-chip-label">{{ label }}</span>
+            <span class="column-chip-count">{{ columns[status_key]|length }}</span>
+        </div>
+        {% endfor %}
+        {% set role = current_user.get_highest_project_role(project.id) %}
+        {% if role in ['admin', 'editor'] %}
+        <a href="{{ url_for('tasks.create_task', project_id=project.id) }}" class="btn btn-primary btn-sm">+ NEW TASK</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="content">
     <div class="kanban-board">
         {% for status_key, label in [('todo', 'To Do'), ('in_progress', 'In Progress'), ('review', 'Review'), ('done', 'Done')] %}
         <div class="kanban-column" data-status="{{ status_key }}">
             <div class="kanban-column-header">
-                {{ label }}
-                <span class="count">{{ columns[status_key]|length }}</span>
+                <span class="kanban-column-title status-{{ status_key }}">{{ label }}</span>
+                <span class="kanban-column-count">{{ columns[status_key]|length }}</span>
             </div>
             <div class="kanban-cards" data-status="{{ status_key }}"
                  ondragover="event.preventDefault(); this.classList.add('drag-over')"
                  ondragleave="this.classList.remove('drag-over')"
                  ondrop="handleDrop(event, '{{ status_key }}')">
                 {% for task in columns[status_key] %}
-                <div class="kanban-card" draggable="true"
+                <div class="task-card" draggable="true"
                      data-task-id="{{ task.id }}"
                      ondragstart="handleDragStart(event)"
-                     ondragend="handleDragEnd(event)">
-                    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text-muted);margin-bottom:0.2rem">{{ task.display_id }}</div>
-                    <a href="{{ url_for('tasks.detail_task', task_id=task.id) }}" class="kanban-card-title" style="color:var(--text)">{{ task.title }}</a>
+                     ondragend="handleDragEnd(event)"
+                     style="border-left-color:{% if task.priority == 'critical' %}var(--danger){% elif task.priority == 'high' %}var(--orange){% elif task.priority == 'medium' %}var(--warning){% else %}var(--border){% endif %}">
+                    <div class="task-card-id">{{ task.display_id }}</div>
+                    <a href="{{ url_for('tasks.detail_task', task_id=task.id) }}" class="task-card-title">{{ task.title }}</a>
+                    {% if task.description %}
+                    <div class="task-card-desc">{{ task.description[:80] }}{% if task.description|length > 80 %}...{% endif %}</div>
+                    {% endif %}
                     {% if task.task_labels %}
-                    <div class="kanban-card-labels">
+                    <div class="task-card-labels">
                         {% for tl in task.task_labels %}
-                        <span class="task-label task-label-sm" style="background:{{ tl.label.color }}20;color:{{ tl.label.color }}">{{ tl.label.name }}</span>
+                        <span class="tag" style="background:{{ tl.label.color }}20;color:{{ tl.label.color }}">{{ tl.label.name }}</span>
                         {% endfor %}
                     </div>
                     {% endif %}
-                    <div class="kanban-card-meta">
-                        <span class="badge badge-{{ task.priority }}">{{ task.priority }}</span>
+                    <div class="task-card-footer">
+                        <span class="priority-badge priority-{{ task.priority }}">{{ task.priority }}</span>
                         {% if task.due_date %}
-                        <span style="font-family:var(--mono);font-size:0.65rem;color:{% if task.due_date < now %}var(--danger){% elif task.due_date.isoformat() == now %}var(--warning){% else %}var(--text-muted){% endif %}">
+                        <span class="task-card-due {% if task.due_date < now %}overdue{% elif task.due_date.isoformat() == now %}today{% else %}upcoming{% endif %}">
                             {{ task.due_date.strftime('%b %d') }}
                         </span>
                         {% endif %}
-                        {% if task.assignee %}
-                        <span>{{ task.assignee.username }}</span>
+                        {% if task.comments %}
+                        <span class="task-card-comments">{{ task.comments|length }}</span>
                         {% endif %}
                     </div>
                 </div>
                 {% endfor %}
+
+                {% if not columns[status_key] %}
+                <div class="kanban-empty">EMPTY</div>
+                {% endif %}
 
                 {% if role in ['admin', 'editor'] %}
                 <div class="quick-create" id="quick-create-{{ status_key }}" style="display:none">
                     <input type="text" class="quick-create-input" id="quick-input-{{ status_key }}"
                            placeholder="Task title..."
                            onkeydown="if(event.key==='Enter'){submitQuickCreate('{{ status_key }}');}if(event.key==='Escape'){hideQuickCreate('{{ status_key }}');}">
-                    <div style="display:flex;gap:0.3rem;margin-top:0.4rem">
-                        <button type="button" class="btn btn-primary btn-sm" onclick="submitQuickCreate('{{ status_key }}')">Create</button>
-                        <button type="button" class="btn btn-ghost btn-sm" onclick="hideQuickCreate('{{ status_key }}')">Cancel</button>
+                    <div class="quick-create-actions">
+                        <button type="button" class="btn btn-primary btn-xs" onclick="submitQuickCreate('{{ status_key }}')">Create</button>
+                        <button type="button" class="btn btn-ghost btn-xs" onclick="hideQuickCreate('{{ status_key }}')">Cancel</button>
                     </div>
                 </div>
-                <button type="button" class="btn btn-ghost btn-sm" style="margin:0.25rem 0.5rem;width:calc(100% - 1rem);justify-content:center;opacity:0.5"
+                <button type="button" class="btn btn-ghost btn-xs" style="width:100%;justify-content:center;opacity:0.5"
                         id="show-quick-{{ status_key }}" onclick="showQuickCreate('{{ status_key }}')">
-                    + Quick add
+                    + QUICK ADD
                 </button>
                 {% endif %}
             </div>

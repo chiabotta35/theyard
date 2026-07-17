@@ -1,65 +1,54 @@
 {% extends "base.html" %}
 {% block title %}Timeline: {{ project.name }} — TheYard{% endblock %}
-{% block content %}
-<div class="container-wide">
-    <div class="page-header">
-        <div style="display:flex;align-items:center;gap:0.75rem">
-            <h1>{{ project.name }}</h1>
-            <span style="color:var(--text-muted);font-size:0.8rem;font-weight:500;text-transform:uppercase;letter-spacing:0.06em">Timeline</span>
-        </div>
-        <div style="display:flex;gap:0.4rem">
-            <a href="{{ url_for('kanban.board', project_id=project.id) }}" class="btn btn-ghost btn-sm">Board</a>
-            <a href="{{ url_for('projects.detail_project', project_id=project.id) }}" class="btn btn-ghost btn-sm">Project</a>
-            {% set role = current_user.get_highest_project_role(project.id) %}
-            {% if role in ['admin', 'editor'] %}
-            <a href="{{ url_for('tasks.create_task', project_id=project.id) }}" class="btn btn-primary btn-sm">+ Task</a>
-            {% endif %}
-        </div>
+{% block topbar %}
+<div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1.25rem;border-bottom:1px solid var(--border)">
+    <div style="display:flex;align-items:center;gap:0.75rem">
+        <h1 style="font-size:1rem">{{ project.name }}</h1>
+        <span class="mono-label" style="color:var(--text-muted)">Timeline</span>
     </div>
-
+    <div style="display:flex;gap:0.35rem">
+        <a href="{{ url_for('kanban.board', project_id=project.id) }}" class="btn btn-ghost btn-xs">Board</a>
+        <a href="{{ url_for('projects.detail_project', project_id=project.id) }}" class="btn btn-ghost btn-xs">Project</a>
+        {% set role = current_user.get_highest_project_role(project.id) %}
+        {% if role in ['admin', 'editor'] %}
+        <a href="{{ url_for('tasks.create_task', project_id=project.id) }}" class="btn btn-primary btn-xs">+ Task</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="content">
     {% if task_bars %}
-    <div class="card" style="padding:0;overflow:hidden">
-        <div class="gantt-container">
-            <div class="gantt-header">
-                <div class="gantt-label">Task</div>
-                <div class="gantt-bar-container" style="display:flex">
-                    {% for day in days %}
-                    <div class="gantt-day {% if day.isoformat() == today %}today{% endif %}">{{ day.strftime('%d') }}</div>
-                    {% endfor %}
+    <div class="gantt-container">
+        <div class="gantt-header">
+            <div class="gantt-label">Task</div>
+            <div class="gantt-bar-container" style="display:flex">
+                {% for day in days %}
+                <div class="gantt-day {% if day.isoformat() == today %}today{% endif %}">{{ day.strftime('%d') }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% for item in task_bars %}
+        <div class="gantt-row">
+            <div class="gantt-label">
+                <a href="{{ url_for('tasks.detail_task', task_id=item.task.id) }}" style="font-size:0.75rem">{{ item.task.display_id }} {{ item.task.title }}</a>
+                <span class="task-label task-label-{{ item.task.status }}" style="margin-left:0.3rem;font-size:0.55rem;padding:0.1rem 0.3rem">{{ item.task.status.replace('_', ' ') }}</span>
+            </div>
+            <div class="gantt-bar-container" style="position:relative">
+                <div class="gantt-bar" style="left:{{ item.left }}px;width:{{ item.width }}px;background:{{ item.color }}">
+                    {{ item.task.title }}
                 </div>
             </div>
-            {% for item in task_bars %}
-            <div class="gantt-row">
-                <div class="gantt-label">
-                    <a href="{{ url_for('tasks.detail_task', task_id=item.task.id) }}" style="color:var(--text);font-size:0.75rem">{{ item.task.display_id }} {{ item.task.title }}</a>
-                    <span class="badge badge-{{ item.task.status }}" style="margin-left:0.3rem;font-size:0.55rem">{{ item.task.status.replace('_', ' ') }}</span>
-                </div>
-                <div class="gantt-bar-container" style="position:relative">
-                    <div class="gantt-bar" style="left:{{ item.left }}px;width:{{ item.width }}px;background:{{ item.color }}">
-                        {{ item.task.title }}
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-            <div style="position:relative;height:0">
-                <div style="position:absolute;left:{{ today_offset }}px;top:0;width:2px;height:100%;background:var(--danger);z-index:5"></div>
-            </div>
+        </div>
+        {% endfor %}
+        <div style="position:relative;height:0">
+            <div style="position:absolute;left:{{ today_offset }}px;top:0;width:2px;height:100%;background:var(--danger);z-index:5"></div>
         </div>
     </div>
     {% else %}
-    <div class="card empty-state">
+    <div class="empty-state">
         <p>No tasks with due dates</p>
-        <p style="font-size:0.8rem;margin-top:0.25rem">Add due dates to tasks to see them on the timeline</p>
-    </div>
-    {% endif %}
-
-    {% if not tasks %}
-    <div class="card" style="margin-top:1rem">
-        <h3>How it works</h3>
-        <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.7">
-            Tasks with due dates appear on this timeline. Bar length is estimated based on priority.
-            The red line marks today. Tasks that are overdue will appear to the left of the line.
-        </p>
+        <p style="font-size:0.75rem;margin-top:0.25rem;color:var(--text-muted)">Add due dates to tasks to see them on the timeline</p>
     </div>
     {% endif %}
 </div>

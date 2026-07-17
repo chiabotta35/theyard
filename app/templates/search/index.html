@@ -1,70 +1,54 @@
 {% extends "base.html" %}
 {% block title %}Search — TheYard{% endblock %}
 {% block content %}
-<div class="container">
+<div class="content">
     <div class="page-header">
         <h1>Search Tasks</h1>
     </div>
-    <div class="card" style="margin-bottom:1rem">
-        <form method="GET" id="search-form" style="display:flex;flex-direction:column;gap:0.75rem">
-            <div class="form-group" style="margin-bottom:0">
-                <input type="text" name="q" value="{{ q }}" placeholder="Search by title, description, or task number…" autofocus
-                       style="width:100%;padding:0.5rem 0.75rem;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.9rem">
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0.5rem">
-                <div class="form-group" style="margin-bottom:0">
-                    <label style="font-size:0.75rem;color:var(--text-muted)">Status</label>
-                    <select name="status" onchange="this.form.submit()" style="width:100%;padding:0.4rem;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.85rem">
-                        <option value="">All</option>
-                        {% for s in task_statuses %}
-                        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s.replace('_', ' ')|title }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group" style="margin-bottom:0">
-                    <label style="font-size:0.75rem;color:var(--text-muted)">Priority</label>
-                    <select name="priority" onchange="this.form.submit()" style="width:100%;padding:0.4rem;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.85rem">
-                        <option value="">All</option>
-                        {% for p in task_priorities %}
-                        <option value="{{ p }}" {% if priority == p %}selected{% endif %}>{{ p|title }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group" style="margin-bottom:0">
-                    <label style="font-size:0.75rem;color:var(--text-muted)">Project</label>
-                    <select name="project_id" onchange="this.form.submit()" style="width:100%;padding:0.4rem;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.85rem">
-                        <option value="">All</option>
-                        {% for p in all_projects %}
-                        <option value="{{ p.id }}" {% if project_id|string == p.id|string %}selected{% endif %}>{{ p.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group" style="margin-bottom:0">
-                    <label style="font-size:0.75rem;color:var(--text-muted)">Assignee</label>
-                    <select name="assignee_id" onchange="this.form.submit()" style="width:100%;padding:0.4rem;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.85rem">
-                        <option value="">All</option>
-                        {% for u in all_users %}
-                        <option value="{{ u.id }}" {% if assignee_id|string == u.id|string %}selected{% endif %}>{{ u.username }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-            <div style="display:flex;gap:0.5rem">
-                <button type="submit" class="btn btn-primary btn-sm">Search</button>
-                {% if q or status or priority or project_id or assignee_id %}
-                <a href="{{ url_for('search.index') }}" class="btn btn-ghost btn-sm">Clear</a>
-                {% endif %}
-            </div>
-        </form>
-    </div>
+
+    <form method="GET" id="search-form">
+        <div class="search-bar">
+            <input type="text" name="q" value="{{ q }}" placeholder="Search by title, description, or task number..." autofocus>
+        </div>
+        <div class="search-filters">
+            <select name="status" onchange="this.form.submit()">
+                <option value="">Status</option>
+                {% for s in task_statuses %}
+                <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s.replace('_', ' ')|title }}</option>
+                {% endfor %}
+            </select>
+            <select name="priority" onchange="this.form.submit()">
+                <option value="">Priority</option>
+                {% for p in task_priorities %}
+                <option value="{{ p }}" {% if priority == p %}selected{% endif %}>{{ p|title }}</option>
+                {% endfor %}
+            </select>
+            <select name="project_id" onchange="this.form.submit()">
+                <option value="">Project</option>
+                {% for p in all_projects %}
+                <option value="{{ p.id }}" {% if project_id|string == p.id|string %}selected{% endif %}>{{ p.name }}</option>
+                {% endfor %}
+            </select>
+            <select name="assignee_id" onchange="this.form.submit()">
+                <option value="">Assignee</option>
+                {% for u in all_users %}
+                <option value="{{ u.id }}" {% if assignee_id|string == u.id|string %}selected{% endif %}>{{ u.username }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Search</button>
+            {% if q or status or priority or project_id or assignee_id %}
+            <a href="{{ url_for('search.index') }}" class="btn btn-ghost btn-sm">Clear</a>
+            {% endif %}
+        </div>
+    </form>
 
     {% if q %}
-    <div class="card" style="padding:0;overflow:hidden">
-        <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--border)">
-            <h3>Results <span style="color:var(--text-muted);font-weight:400">({{ results|length }})</span></h3>
-        </div>
-        {% if results %}
-        <table>
+    <div class="section-header">
+        <span class="mono-label">Results ({{ results|length }})</span>
+    </div>
+    {% if results %}
+    <div style="overflow-x:auto">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -78,22 +62,20 @@
             <tbody>
                 {% for task in results %}
                 <tr>
-                    <td style="font-family:var(--mono);font-size:0.75rem;color:var(--text-muted)">{{ task.display_id }}</td>
-                    <td><a href="{{ url_for('tasks.detail_task', task_id=task.id) }}" style="font-weight:500">{{ task.title }}</a></td>
-                    <td><a href="{{ url_for('projects.detail_project', project_id=task.project.id) }}" style="color:var(--text-muted)">{{ task.project.name }}</a></td>
-                    <td><span class="badge badge-{{ task.status }}">{{ task.status.replace('_', ' ') }}</span></td>
-                    <td><span class="badge badge-{{ task.priority }}">{{ task.priority }}</span></td>
-                    <td style="color:var(--text-muted)">{{ task.assignee.username if task.assignee else '—' }}</td>
+                    <td><span class="mono-label">{{ task.display_id }}</span></td>
+                    <td><a href="{{ url_for('tasks.detail_task', task_id=task.id) }}">{{ task.title }}</a></td>
+                    <td><a href="{{ url_for('projects.detail_project', project_id=task.project.id) }}">{{ task.project.name }}</a></td>
+                    <td><span class="task-label task-label-{{ task.status }}">{{ task.status.replace('_', ' ') }}</span></td>
+                    <td><span class="task-label task-label-{{ task.priority }}">{{ task.priority }}</span></td>
+                    <td>{{ task.assignee.username if task.assignee else '—' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        {% else %}
-        <div class="empty-state" style="padding:2.5rem">
-            <p>No tasks found matching "{{ q }}"</p>
-        </div>
-        {% endif %}
     </div>
+    {% else %}
+    <div class="empty-state">No tasks found matching "{{ q }}"</div>
+    {% endif %}
     {% endif %}
 </div>
 {% endblock %}

@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Recurring Tasks — {{ project.name }}{% endblock %}
 {% block content %}
-<div class="container">
+<div class="content">
     <div class="page-header">
-        <h1>Recurring Tasks — {{ project.name }}</h1>
-        <div style="display:flex;gap:0.4rem">
+        <h1>Recurring Tasks</h1>
+        <div style="display:flex;gap:0.35rem">
             <form method="POST" action="{{ url_for('recurring.check_recurring', project_id=project.id) }}" style="margin:0">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-ghost btn-sm">Check & Run</button>
             </form>
-            <a href="{{ url_for('projects.detail_project', project_id=project.id) }}" class="btn btn-ghost btn-sm">Back to Project</a>
+            <a href="{{ url_for('projects.detail_project', project_id=project.id) }}" class="btn btn-ghost btn-sm">Back</a>
         </div>
     </div>
 
@@ -18,25 +18,25 @@
         <form method="POST" action="{{ url_for('recurring.create_recurring', project_id=project.id) }}">
             {{ form.hidden_tag() }}
             <div class="form-group">
-                <label for="title">Title</label>
+                <label class="mono-label" for="title">Title</label>
                 {{ form.title(id="title", placeholder="Task title") }}
                 {% for e in form.title.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="form-group">
-                <label for="description">Description</label>
+                <label class="mono-label" for="description">Description</label>
                 {{ form.description(id="description", placeholder="Optional description") }}
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem">
                 <div class="form-group">
-                    <label for="priority">Priority</label>
+                    <label class="mono-label" for="priority">Priority</label>
                     {{ form.priority(id="priority") }}
                 </div>
                 <div class="form-group">
-                    <label for="assignee_id">Assignee</label>
+                    <label class="mono-label" for="assignee_id">Assignee</label>
                     {{ form.assignee_id(id="assignee_id") }}
                 </div>
                 <div class="form-group">
-                    <label for="interval_days">Repeat Interval</label>
+                    <label class="mono-label" for="interval_days">Repeat Interval</label>
                     {{ form.interval_days(id="interval_days") }}
                 </div>
             </div>
@@ -44,12 +44,12 @@
         </form>
     </div>
 
-    <div class="card" style="padding:0;overflow:hidden">
-        <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--border)">
-            <h3>Recurring Tasks <span style="color:var(--text-muted);font-weight:400">({{ tasks|length }})</span></h3>
-        </div>
-        {% if tasks %}
-        <table>
+    <div class="section-header">
+        <span class="mono-label">Recurring Tasks ({{ tasks|length }})</span>
+    </div>
+    {% if tasks %}
+    <div style="overflow-x:auto">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>Title</th>
@@ -64,33 +64,36 @@
             <tbody>
                 {% for rt in tasks %}
                 <tr>
-                    <td style="font-weight:500">{{ rt.title }}</td>
-                    <td><span class="badge badge-{{ rt.priority }}">{{ rt.priority }}</span></td>
-                    <td style="color:var(--text-muted)">{{ rt.assignee.username if rt.assignee else '—' }}</td>
-                    <td style="font-family:var(--mono);font-size:0.8rem">
-                        {% set intervals = {1: 'Daily', 3: 'Every 3d', 7: 'Weekly', 14: 'Biweekly', 30: 'Monthly', 90: 'Quarterly'} %}
-                        {{ intervals.get(rt.interval_days, rt.interval_days ~ 'd') }}
-                    </td>
-                    <td style="font-family:var(--mono);font-size:0.75rem;color:var(--text-muted)">
-                        {{ rt.last_run.strftime('%b %d, %Y') if rt.last_run else 'Never' }}
+                    <td>{{ rt.title }}</td>
+                    <td><span class="task-label task-label-{{ rt.priority }}">{{ rt.priority }}</span></td>
+                    <td>{{ rt.assignee.username if rt.assignee else '—' }}</td>
+                    <td>
+                        <span class="mono-label">
+                            {% set intervals = {1: 'Daily', 3: 'Every 3d', 7: 'Weekly', 14: 'Biweekly', 30: 'Monthly', 90: 'Quarterly'} %}
+                            {{ intervals.get(rt.interval_days, rt.interval_days ~ 'd') }}
+                        </span>
                     </td>
                     <td>
-                        <span class="badge {% if rt.is_active %}badge-success{% else %}badge-draft{% endif %}">
-                            {{ 'Active' if rt.is_active else 'Paused' }}
-                        </span>
+                        <span class="mono-label">{{ rt.last_run.strftime('%b %d, %Y') if rt.last_run else 'Never' }}</span>
+                    </td>
+                    <td>
+                        <div class="recurring-row" style="padding:0;gap:0.35rem">
+                            <div class="status-dot {% if rt.is_active %}active{% else %}inactive{% endif %}"></div>
+                            <span>{{ 'Active' if rt.is_active else 'Paused' }}</span>
+                        </div>
                     </td>
                     <td>
                         <div style="display:flex;gap:0.3rem">
                             <form method="POST" action="{{ url_for('recurring.toggle_recurring', recurring_id=rt.id) }}" style="margin:0">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-ghost btn-sm" title="{{ 'Pause' if rt.is_active else 'Activate' }}">
-                                    {{ '⏸' if rt.is_active else '▶' }}
+                                <button type="submit" class="btn btn-ghost btn-xs" title="{{ 'Pause' if rt.is_active else 'Activate' }}">
+                                    {{ 'Pause' if rt.is_active else 'Play' }}
                                 </button>
                             </form>
                             <form method="POST" action="{{ url_for('recurring.delete_recurring', recurring_id=rt.id) }}" style="margin:0"
                                   onsubmit="return confirm('Delete this recurring task?')">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--danger)" title="Delete">✕</button>
+                                <button type="submit" class="btn btn-danger btn-xs" title="Delete">Delete</button>
                             </form>
                         </div>
                     </td>
@@ -98,11 +101,9 @@
                 {% endfor %}
             </tbody>
         </table>
-        {% else %}
-        <div class="empty-state" style="padding:2.5rem">
-            <p>No recurring tasks yet</p>
-        </div>
-        {% endif %}
     </div>
+    {% else %}
+    <div class="empty-state">No recurring tasks yet</div>
+    {% endif %}
 </div>
 {% endblock %}

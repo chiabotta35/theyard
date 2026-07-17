@@ -2,24 +2,35 @@
 {% block title %}Sign in — TheYard{% endblock %}
 {% block content %}
 <div class="auth-wrapper">
-    <div class="card auth-card">
+    <div class="auth-card">
+        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.25rem">
+            <div style="width:36px;height:36px;background:var(--primary);border-radius:2px;display:grid;place-items:center">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px">
+                    <div style="width:6px;height:6px;background:#080808;border-radius:1px"></div>
+                    <div style="width:6px;height:6px;background:#080808;border-radius:1px"></div>
+                    <div style="width:6px;height:6px;background:#080808;border-radius:1px"></div>
+                    <div style="width:6px;height:6px;background:#080808;border-radius:1px"></div>
+                </div>
+            </div>
+            <span style="font-size:1.1rem;font-weight:600;letter-spacing:-0.02em">theyard</span>
+        </div>
         <h1>Sign in to TheYard</h1>
         <form method="POST">
             {{ form.hidden_tag() }}
             <div class="form-group">
-                <label for="username">Username</label>
+                <label class="mono-label" for="username">Username</label>
                 {{ form.username(id="username", placeholder="username") }}
                 {% for e in form.username.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="form-group">
-                <label for="password">Password</label>
+                <label class="mono-label" for="password">Password</label>
                 {{ form.password(id="password", placeholder="password") }}
                 {% for e in form.password.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="form-group">
-                <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer">{{ form.remember() }} Remember me</label>
+                <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.8rem;color:var(--text-secondary)">{{ form.remember() }} Remember me</label>
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:0.55rem">Sign in</button>
+            <button type="submit" class="btn btn-primary" style="width:100%">Sign in</button>
         </form>
         <div class="auth-footer">
             Don't have an account? <a href="{{ url_for('auth.register') }}">Register</a>

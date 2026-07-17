@@ -1,108 +1,104 @@
 {% extends "base.html" %}
 {% block title %}{{ project.name }} — TheYard{% endblock %}
+{% block topbar %}
+<div class="topbar">
+    <div class="topbar-project-name">{{ project.name }}</div>
+    <span class="badge badge-{{ project.status }}">{{ project.status }}</span>
+    {% if project.prefix %}<span class="topbar-project-meta">[{{ project.prefix|upper }}]</span>{% endif %}
+    <div class="topbar-right">
+        <a href="{{ url_for('kanban.board', project_id=project.id) }}" class="btn btn-ghost btn-sm">Board</a>
+        <a href="{{ url_for('gantt.view', project_id=project.id) }}" class="btn btn-ghost btn-sm">Timeline</a>
+        <a href="{{ url_for('recurring.list_recurring', project_id=project.id) }}" class="btn btn-ghost btn-sm">Recurring</a>
+        <a href="{{ url_for('projects.project_activity', project_id=project.id) }}" class="btn btn-ghost btn-sm">Activity</a>
+        {% if role == 'admin' %}
+        <a href="{{ url_for('projects.edit_project', project_id=project.id) }}" class="btn btn-ghost btn-sm">Edit</a>
+        <a href="{{ url_for('projects.project_permissions', project_id=project.id) }}" class="btn btn-ghost btn-sm">Permissions</a>
+        <a href="{{ url_for('projects.project_labels', project_id=project.id) }}" class="btn btn-ghost btn-sm">Labels</a>
+        {% endif %}
+        {% if role in ['admin', 'editor'] %}
+        <a href="{{ url_for('tasks.create_task', project_id=project.id) }}" class="btn btn-primary btn-sm">+ Task</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
 {% block content %}
-<div class="container">
-    <div class="page-header">
-        <div style="display:flex;align-items:center;gap:0.75rem">
-            <h1>{{ project.name }}</h1>
-            <span class="badge badge-{{ project.status }}">{{ project.status }}</span>
-            {% if project.prefix %}<span style="color:var(--text-muted);font-family:var(--mono);font-size:0.7rem">[{{ project.prefix|upper }}]</span>{% endif %}
-        </div>
-        <div style="display:flex;gap:0.4rem">
-            <a href="{{ url_for('kanban.board', project_id=project.id) }}" class="btn btn-ghost btn-sm">Board</a>
-            <a href="{{ url_for('gantt.view', project_id=project.id) }}" class="btn btn-ghost btn-sm">Timeline</a>
-            <a href="{{ url_for('recurring.list_recurring', project_id=project.id) }}" class="btn btn-ghost btn-sm">Recurring</a>
-            <a href="{{ url_for('projects.project_activity', project_id=project.id) }}" class="btn btn-ghost btn-sm">Activity</a>
-            {% if role == 'admin' %}
-            <a href="{{ url_for('projects.edit_project', project_id=project.id) }}" class="btn btn-ghost btn-sm">Edit</a>
-            <a href="{{ url_for('projects.project_permissions', project_id=project.id) }}" class="btn btn-ghost btn-sm">Permissions</a>
-            <a href="{{ url_for('projects.project_labels', project_id=project.id) }}" class="btn btn-ghost btn-sm">Labels</a>
-            {% endif %}
-            {% if role in ['admin', 'editor'] %}
-            <a href="{{ url_for('tasks.create_task', project_id=project.id) }}" class="btn btn-primary btn-sm">+ Task</a>
-            {% endif %}
-        </div>
-    </div>
-
+<div class="content">
     {% if project.description %}
-    <div class="card">
-        <p style="white-space:pre-wrap;color:var(--text-secondary);font-size:0.85rem">{{ project.description }}</p>
-    </div>
+    <p class="section-header">{{ project.description }}</p>
     {% endif %}
 
-    <div class="card" style="padding:0;overflow:hidden">
-        <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--border)">
-            <h3>Tasks <span style="color:var(--text-muted);font-weight:400">({{ tasks|length }})</span></h3>
-        </div>
-        {% if tasks %}
-        {% if role in ['admin', 'editor'] %}
-        <div class="bulk-bar" id="bulk-bar">
-            <span style="font-weight:500"><span id="bulk-count">0</span> selected</span>
-            <form method="POST" action="{{ url_for('tasks.bulk_action') }}" id="bulk-form" style="display:flex;gap:0.5rem;align-items:center">
-                <select name="bulk_action" style="padding:0.3rem 0.5rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:0.8rem;font-family:var(--font)">
-                    <option value="">Action...</option>
-                    <optgroup label="Status">
-                        <option value="status_todo">Mark To Do</option>
-                        <option value="status_in_progress">Mark In Progress</option>
-                        <option value="status_review">Mark Review</option>
-                        <option value="status_done">Mark Done</option>
-                    </optgroup>
-                    <optgroup label="Priority">
-                        <option value="priority_low">Set Low</option>
-                        <option value="priority_medium">Set Medium</option>
-                        <option value="priority_high">Set High</option>
-                        <option value="priority_critical">Set Critical</option>
-                    </optgroup>
-                    <option value="delete" style="color:var(--danger)">Delete Selected</option>
-                </select>
-                <button type="submit" class="btn btn-primary btn-sm">Apply</button>
-            </form>
-        </div>
-        {% endif %}
-        <table>
-            <thead>
-                <tr>
-                    {% if role in ['admin', 'editor'] %}<th style="width:30px"><input type="checkbox" id="select-all" onchange="toggleAll(this)"></th>{% endif %}
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Status</th>
-                    <th>Priority</th>
-                    <th>Assignee</th>
-                    <th>Due</th>
-                    <th>Labels</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for task in tasks %}
-                <tr>
-                    {% if role in ['admin', 'editor'] %}<td><input type="checkbox" name="task_ids" value="{{ task.id }}" class="task-cb" onchange="updateBulk()"></td>{% endif %}
-                    <td style="font-family:var(--mono);font-size:0.7rem;color:var(--text-muted)">{{ task.display_id }}</td>
-                    <td><a href="{{ url_for('tasks.detail_task', task_id=task.id) }}" style="font-weight:500">{{ task.title }}</a></td>
-                    <td><span class="badge badge-{{ task.status }}">{{ task.status.replace('_', ' ') }}</span></td>
-                    <td><span class="badge badge-{{ task.priority }}">{{ task.priority }}</span></td>
-                    <td style="color:var(--text-muted)">{{ task.assignee.username if task.assignee else '—' }}</td>
-                    <td style="font-family:var(--mono);font-size:0.75rem">
-                        {% if task.due_date %}
-                        <span style="color:{% if task.due_date.isoformat() < now %}var(--danger){% elif task.due_date.isoformat() == now %}var(--warning){% else %}var(--text-muted){% endif %}">
-                            {{ task.due_date.strftime('%b %d') }}
-                        </span>
-                        {% else %}—{% endif %}
-                    </td>
-                    <td>
-                        {% for tl in task.task_labels %}
-                        <span class="task-label task-label-sm" style="background:{{ tl.label.color }}20;color:{{ tl.label.color }}">{{ tl.label.name }}</span>
-                        {% endfor %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="empty-state" style="padding:2.5rem">
-            <p>No tasks yet</p>
-        </div>
-        {% endif %}
+    <div class="section-header">
+        <span class="mono-label">Tasks ({{ tasks|length }})</span>
     </div>
+
+    {% if tasks %}
+    {% if role in ['admin', 'editor'] %}
+    <div class="bulk-bar visible" id="bulk-bar">
+        <span><span id="bulk-count">0</span> selected</span>
+        <form method="POST" action="{{ url_for('tasks.bulk_action') }}" id="bulk-form" style="display:flex;gap:0.5rem;align-items:center">
+            <select name="bulk_action" class="mono-input">
+                <option value="">Action...</option>
+                <optgroup label="Status">
+                    <option value="status_todo">Mark To Do</option>
+                    <option value="status_in_progress">Mark In Progress</option>
+                    <option value="status_review">Mark Review</option>
+                    <option value="status_done">Mark Done</option>
+                </optgroup>
+                <optgroup label="Priority">
+                    <option value="priority_low">Set Low</option>
+                    <option value="priority_medium">Set Medium</option>
+                    <option value="priority_high">Set High</option>
+                    <option value="priority_critical">Set Critical</option>
+                </optgroup>
+                <option value="delete" style="color:var(--danger)">Delete Selected</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+        </form>
+    </div>
+    {% endif %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                {% if role in ['admin', 'editor'] %}<th style="width:30px"><input type="checkbox" id="select-all" onchange="toggleAll(this)"></th>{% endif %}
+                <th><span class="mono-label">ID</span></th>
+                <th><span class="mono-label">Title</span></th>
+                <th><span class="mono-label">Status</span></th>
+                <th><span class="mono-label">Priority</span></th>
+                <th><span class="mono-label">Assignee</span></th>
+                <th><span class="mono-label">Due</span></th>
+                <th><span class="mono-label">Labels</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+            <tr>
+                {% if role in ['admin', 'editor'] %}<td><input type="checkbox" name="task_ids" value="{{ task.id }}" class="task-cb" onchange="updateBulk()"></td>{% endif %}
+                <td><span class="mono-label">{{ task.display_id }}</span></td>
+                <td><a href="{{ url_for('tasks.detail_task', task_id=task.id) }}">{{ task.title }}</a></td>
+                <td><span class="badge badge-{{ task.status }}">{{ task.status.replace('_', ' ') }}</span></td>
+                <td><span class="badge badge-{{ task.priority }}">{{ task.priority }}</span></td>
+                <td>{{ task.assignee.username if task.assignee else '—' }}</td>
+                <td>
+                    {% if task.due_date %}
+                    <span class="mono-label" style="color:{% if task.due_date.isoformat() < now %}var(--danger){% elif task.due_date.isoformat() == now %}var(--warning){% else %}var(--text-muted){% endif %}">
+                        {{ task.due_date.strftime('%b %d') }}
+                    </span>
+                    {% else %}—{% endif %}
+                </td>
+                <td>
+                    {% for tl in task.task_labels %}
+                    <span class="task-label task-label-sm" style="background:{{ tl.label.color }}20;color:{{ tl.label.color }}">{{ tl.label.name }}</span>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>No tasks yet</p>
+    </div>
+    {% endif %}
 </div>
 
 {% if role in ['admin', 'editor'] %}

@@ -1,38 +1,35 @@
 {% extends "base.html" %}
 {% block title %}Projects — TheYard{% endblock %}
 {% block content %}
-<div class="container">
+<div class="content">
     <div class="page-header">
         <h1>Projects</h1>
         <a href="{{ url_for('projects.create_project') }}" class="btn btn-primary">+ New Project</a>
     </div>
 
     {% if projects %}
-    <div class="card" style="padding:0;overflow:hidden">
-        <table>
-            <thead>
-                <tr>
-                    <th>Project</th>
-                    <th>Status</th>
-                    <th>Tasks</th>
-                    <th>Updated</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for project in projects %}
-                <tr>
-                    <td><a href="{{ url_for('projects.detail_project', project_id=project.id) }}" style="font-weight:500">{{ project.name }}</a></td>
-                    <td><span class="badge badge-{{ project.status }}">{{ project.status }}</span></td>
-                    <td style="font-family:var(--mono);color:var(--text-muted)">{{ project.tasks.count() }}</td>
-                    <td style="color:var(--text-muted);font-size:0.75rem">{{ project.updated_at.strftime('%b %d, %Y') }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th><span class="mono-label">Project</span></th>
+                <th><span class="mono-label">Status</span></th>
+                <th><span class="mono-label">Tasks</span></th>
+                <th><span class="mono-label">Updated</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for project in projects %}
+            <tr>
+                <td><a href="{{ url_for('projects.detail_project', project_id=project.id) }}">{{ project.name }}</a></td>
+                <td><span class="badge badge-{{ project.status }}">{{ project.status }}</span></td>
+                <td><span class="mono-label">{{ project.tasks.count() }}</span></td>
+                <td><span class="mono-label">{{ project.updated_at.strftime('%b %d, %Y') }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     {% else %}
-    <div class="card empty-state">
-        <div class="empty-icon">📋</div>
+    <div class="empty-state">
         <p>No projects yet</p>
         <a href="{{ url_for('projects.create_project') }}" class="btn btn-primary" style="margin-top:1rem">Create your first project</a>
     </div>

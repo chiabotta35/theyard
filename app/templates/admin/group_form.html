@@ -1,23 +1,26 @@
 {% extends "base.html" %}
 {% block title %}{{ title }} — TheYard{% endblock %}
 {% block content %}
-<div class="container">
+<div class="content">
     <div class="page-header">
         <h1>{{ title }}</h1>
     </div>
     <div class="card" style="max-width:480px">
+        <div class="card-header">
+            <span class="mono-label">GROUP DETAILS</span>
+        </div>
         <form method="POST">
             {{ form.hidden_tag() }}
             <div class="form-group">
-                <label>Group Name</label>
-                {{ form.name(placeholder="e.g. Dev Team") }}
+                <label class="form-label">NAME</label>
+                {{ form.name(class="mono-input", placeholder="e.g. Dev Team") }}
                 {% for e in form.name.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="form-group">
-                <label>Description</label>
-                {{ form.description(placeholder="Optional description") }}
+                <label class="form-label">DESCRIPTION</label>
+                {{ form.description(class="mono-input", placeholder="Optional description") }}
             </div>
-            <div style="display:flex;gap:0.5rem">
+            <div style="display:flex;gap:0.5rem;margin-top:1rem">
                 <button type="submit" class="btn btn-primary">Save</button>
                 <a href="{{ url_for('auth.admin_groups') }}" class="btn btn-ghost">Cancel</a>
             </div>

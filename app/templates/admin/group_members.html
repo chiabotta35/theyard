@@ -1,29 +1,40 @@
 {% extends "base.html" %}
 {% block title %}{{ group.name }} — TheYard{% endblock %}
 {% block content %}
-<div class="container">
+<div class="content">
     <div class="page-header">
         <h1>{{ group.name }} <span style="color:var(--text-muted);font-weight:400;font-size:0.85rem">Members</span></h1>
         <a href="{{ url_for('auth.admin_groups') }}" class="btn btn-ghost btn-sm">Back</a>
     </div>
 
-    <div class="card" style="padding:0;overflow:hidden;max-width:600px">
-        <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--border)">
-            <h3>Members <span style="color:var(--text-muted);font-weight:400">({{ members|length }})</span></h3>
+    <div class="card" style="max-width:600px">
+        <div class="card-header">
+            <span class="mono-label">MEMBERS ({{ members|length }})</span>
         </div>
         {% if members %}
-        <table>
-            <thead><tr><th>User</th><th>Email</th><th></th></tr></thead>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>USER</th>
+                    <th>EMAIL</th>
+                    <th></th>
+                </tr>
+            </thead>
             <tbody>
                 {% for m in members %}
                 <tr>
-                    <td style="font-weight:500">{{ m.username }}</td>
-                    <td style="color:var(--text-muted)">{{ m.email }}</td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:0.6rem">
+                            <div class="avatar" style="background:var(--primary)">{{ m.username[0]|upper }}</div>
+                            <span style="font-weight:500">{{ m.username }}</span>
+                        </div>
+                    </td>
+                    <td style="color:var(--text-muted);font-family:var(--mono);font-size:0.75rem">{{ m.email }}</td>
                     <td>
                         <form method="POST" action="{{ url_for('auth.admin_group_members', group_id=group.id) }}" style="display:inline">
                             <input type="hidden" name="user_id" value="{{ m.id }}">
                             <input type="hidden" name="action" value="remove">
-                            <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                            <button type="submit" class="btn btn-danger btn-xs">Remove</button>
                         </form>
                     </td>
                 </tr>
@@ -36,12 +47,14 @@
     </div>
 
     {% if non_members %}
-    <div class="card" style="max-width:600px">
-        <h3>Add Member</h3>
+    <div class="card" style="max-width:600px;margin-top:1rem">
+        <div class="card-header">
+            <span class="mono-label">ADD MEMBER</span>
+        </div>
         <form method="POST" action="{{ url_for('auth.admin_group_members', group_id=group.id) }}" style="display:flex;gap:0.5rem;align-items:flex-end">
             <div class="form-group" style="margin-bottom:0;flex:1">
-                <label>User</label>
-                <select name="user_id" style="width:100%;padding:0.5rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:0.85rem">
+                <label class="form-label">USER</label>
+                <select name="user_id" class="mono-input" style="width:100%">
                     {% for u in non_members %}<option value="{{ u.id }}">{{ u.username }}</option>{% endfor %}
                 </select>
             </div>

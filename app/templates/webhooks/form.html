@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ title }} — TheYard{% endblock %}
 {% block content %}
-<div class="container">
+<div class="content">
     <div class="page-header">
         <h1>{{ title }}</h1>
     </div>
@@ -9,37 +9,38 @@
         <form method="POST">
             {{ form.hidden_tag() }}
             <div class="form-group">
-                <label>Name</label>
+                <label class="mono-label">Name</label>
                 {{ form.name(placeholder="e.g. Discord - Dev Channel") }}
                 {% for e in form.name.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="form-group">
-                <label>URL</label>
+                <label class="mono-label">URL</label>
                 {{ form.url(placeholder="https://discord.com/api/webhooks/...") }}
                 {% for e in form.url.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="form-group">
-                <label>Secret <span style="color:var(--text-muted);font-weight:400">(optional, for HMAC signing)</span></label>
+                <label class="mono-label">Secret</label>
+                <span style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:0.35rem">Optional, for HMAC signing</span>
                 {{ form.secret(placeholder="Leave blank if not needed") }}
             </div>
             <div class="form-group">
-                <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer">{{ form.is_active() }} Active</label>
+                <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.8rem;color:var(--text-secondary)">{{ form.is_active() }} Active</label>
             </div>
             <div class="form-group">
-                <label>Events</label>
-                <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.3rem">
+                <label class="mono-label">Events</label>
+                <div style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.3rem">
                     {% set selected = webhook.get_events_list() if webhook else ['task.created','task.updated','task.status_changed','comment.created'] %}
                     {% for event in all_events %}
-                    <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.8rem;color:var(--text-secondary);cursor:pointer;background:var(--surface-hover);padding:0.25rem 0.5rem;border-radius:var(--radius);border:1px solid var(--border)">
-                        <input type="checkbox" name="events" value="{{ event }}" {% if event in selected %}checked{% endif %} style="accent-color:var(--accent)">
+                    <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.75rem;color:var(--text-secondary);cursor:pointer;background:var(--surface);padding:0.25rem 0.5rem;border-radius:2px;border:1px solid var(--border)">
+                        <input type="checkbox" name="events" value="{{ event }}" {% if event in selected %}checked{% endif %} style="accent-color:var(--primary)">
                         {{ event }}
                     </label>
                     {% endfor %}
                 </div>
             </div>
             <div style="display:flex;gap:0.5rem;margin-top:1.5rem">
-                <button type="submit" class="btn btn-primary">Save</button>
-                <a href="{{ url_for('webhooks.list_webhooks') }}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                <a href="{{ url_for('webhooks.list_webhooks') }}" class="btn btn-ghost btn-sm">Cancel</a>
             </div>
         </form>
     </div>

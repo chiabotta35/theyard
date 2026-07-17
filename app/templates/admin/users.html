@@ -1,32 +1,38 @@
 {% extends "base.html" %}
 {% block title %}Users — TheYard{% endblock %}
 {% block content %}
-<div class="container">
+<div class="content">
     <div class="page-header">
         <h1>Users</h1>
     </div>
-    <div class="card" style="padding:0;overflow:hidden">
-        <table>
+    <div class="card">
+        <table class="data-table">
             <thead>
                 <tr>
-                    <th>User</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th></th>
+                    <th>USER</th>
+                    <th>ROLE</th>
+                    <th>STATUS</th>
+                    <th>ACTIONS</th>
                 </tr>
             </thead>
             <tbody>
                 {% for user in users %}
                 <tr>
-                    <td style="font-weight:500">{{ user.username }}</td>
-                    <td style="color:var(--text-muted)">{{ user.email }}</td>
                     <td>
-                        {% if user.is_admin %}<span class="badge badge-admin">Admin</span>
-                        {% elif user.is_owner %}<span class="badge badge-editor">Owner</span>
-                        {% else %}<span class="badge badge-viewer">User</span>{% endif %}
+                        <div style="display:flex;align-items:center;gap:0.6rem">
+                            <div class="avatar" style="background:{% if user.is_admin %}var(--primary){% elif user.is_owner %}var(--danger){% else %}var(--purple){% endif %}">{{ user.username[0]|upper }}</div>
+                            <span style="font-weight:500">{{ user.username }}</span>
+                        </div>
                     </td>
-                    <td>{% if user.is_active_user %}<span style="color:var(--success);font-size:0.75rem">Active</span>{% else %}<span style="color:var(--danger);font-size:0.75rem">Disabled</span>{% endif %}</td>
+                    <td>
+                        {% if user.is_admin %}<span class="badge badge-admin">ADMIN</span>
+                        {% elif user.is_owner %}<span class="badge badge-owner">OWNER</span>
+                        {% else %}<span class="badge badge-viewer">VIEWER</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if user.is_active_user %}<span style="color:var(--primary);font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em">Active</span>
+                        {% else %}<span style="color:var(--danger);font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em">Disabled</span>{% endif %}
+                    </td>
                     <td>
                         <div style="display:flex;gap:0.3rem">
                             <a href="{{ url_for('auth.admin_edit_user', user_id=user.id) }}" class="btn btn-ghost btn-sm">Edit</a>
