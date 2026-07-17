@@ -82,7 +82,10 @@ def create_app():
     with app.app_context():
         data_dir = Path(app.instance_path).parent / "data"
         data_dir.mkdir(parents=True, exist_ok=True)
-        db.create_all()
+        try:
+            db.create_all()
+        except Exception:
+            db.session.rollback()
         _seed_admin(app)
 
     return app
