@@ -3,6 +3,7 @@ services:
     image: ghcr.io/chiabotta35/theyard:latest
     container_name: theyard
     restart: unless-stopped
+    pull_policy: always
     ports:
       - "5000:5000"
     volumes:
