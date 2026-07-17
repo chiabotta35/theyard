@@ -3,15 +3,11 @@
 {% block content %}
 <div class="container">
     <div class="page-header">
-        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:0.75rem">
+            <a href="{{ url_for('projects.detail_project', project_id=task.project_id) }}" class="btn btn-ghost btn-sm">← Back</a>
             <h1>{{ task.title }}</h1>
-            <span class="badge badge-{{ task.status }}">{{ task.status.replace('_', ' ') }}</span>
-            <span class="badge badge-{{ task.priority }}">{{ task.priority }}</span>
         </div>
         <div style="display:flex;gap:0.4rem">
-            {% if task.project %}
-            <a href="{{ url_for('kanban.board', project_id=task.project_id) }}" class="btn btn-ghost btn-sm">Board</a>
-            <a href="{{ url_for('projects.detail_project', project_id=task.project_id) }}" class="btn btn-ghost btn-sm">Project</a>
             {% set role = current_user.get_highest_project_role(task.project_id) %}
             {% if role in ['admin', 'editor'] %}
             <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="btn btn-ghost btn-sm">Edit</a>
@@ -21,62 +17,77 @@
                 <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this task?')">Delete</button>
             </form>
             {% endif %}
-            {% endif %}
         </div>
     </div>
 
-    <div class="stats-row">
-        <div class="stat-card">
-            <div class="stat-label">Assignee</div>
-            <div class="stat-value" style="font-size:1rem">{{ task.assignee.username if task.assignee else '—' }}</div>
+    <div class="detail-grid" style="max-width:600px">
+        <div class="detail-label">Status</div>
+        <div><span class="badge badge-{{ task.status }}">{{ task.status.replace('_', ' ') }}</span></div>
+
+        <div class="detail-label">Priority</div>
+        <div><span class="badge badge-{{ task.priority }}">{{ task.priority }}</span></div>
+
+        <div class="detail-label">Assignee</div>
+        <div>{{ task.assignee.username if task.assignee else '—' }}</div>
+
+        <div class="detail-label">Created by</div>
+        <div>{{ task.creator.username }}</div>
+
+        <div class="detail-label">Due Date</div>
+        <div>
+            {% if task.due_date %}
+                <span style="color:{% if task.due_date < now %}var(--danger){% elif task.due_date.isoformat() == now %}var(--warning){% else %}var(--text-secondary){% endif %}">
+                    {{ task.due_date.strftime('%b %d, %Y') }}
+                </span>
+            {% else %}—{% endif %}
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Created by</div>
-            <div class="stat-value" style="font-size:1rem">{{ task.creator.username }}</div>
+
+        {% if task_labels %}
+        <div class="detail-label">Labels</div>
+        <div style="display:flex;gap:0.3rem;flex-wrap:wrap">
+            {% for lbl in task_labels %}
+            <span class="task-label" style="background:{{ lbl.color }}20;color:{{ lbl.color }};border:1px solid {{ lbl.color }}40">{{ lbl.name }}</span>
+            {% endfor %}
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Created</div>
-            <div class="stat-value" style="font-size:1rem">{{ task.created_at.strftime('%b %d') }}</div>
-        </div>
+        {% endif %}
     </div>
 
     {% if task.description %}
-    <div class="card">
-        <p style="white-space:pre-wrap;color:var(--text-secondary);font-size:0.85rem">{{ task.description }}</p>
+    <div class="card" style="max-width:600px;margin-top:1rem">
+        <p style="white-space:pre-wrap;color:var(--text-secondary);font-size:0.85rem;line-height:1.7">{{ task.description }}</p>
     </div>
     {% endif %}
 
-    <div class="card">
-        <div style="padding-bottom:1rem;border-bottom:1px solid var(--border);margin-bottom:0.5rem">
+    <div class="card" style="max-width:600px;margin-top:1rem;padding:0;overflow:hidden">
+        <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--border)">
             <h3>Comments <span style="color:var(--text-muted);font-weight:400">({{ comments|length }})</span></h3>
         </div>
-
-        {% for comment in comments %}
-        <div class="comment">
-            <div class="comment-header">
-                <span class="comment-author">{{ comment.author.username }}</span>
-                <span class="comment-time">{{ comment.created_at.strftime('%b %d, %H:%M') }}</span>
+        {% if comments %}
+        <div style="padding:0 1.5rem">
+            {% for c in comments %}
+            <div class="comment">
+                <div class="comment-header">
+                    <span class="comment-author">{{ c.author.username }}</span>
+                    <span class="comment-time">{{ c.created_at.strftime('%b %d, %H:%M') }}</span>
+                </div>
+                <div class="comment-body">{{ c.content }}</div>
             </div>
-            <div class="comment-body">{{ comment.content }}</div>
+            {% endfor %}
         </div>
-        {% endfor %}
-
-        {% if not comments %}
-        <p style="color:var(--text-muted);padding:0.75rem 0;font-size:0.85rem">No comments yet</p>
         {% endif %}
+    </div>
 
-        {% if task.project %}
-        {% set role = current_user.get_highest_project_role(task.project_id) %}
-        {% if role in ['admin', 'editor'] %}
-        <form method="POST" action="{{ url_for('tasks.add_comment', task_id=task.id) }}" style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border)">
+    {% set role = current_user.get_highest_project_role(task.project_id) %}
+    {% if role in ['admin', 'editor'] %}
+    <div class="card" style="max-width:600px">
+        <form method="POST" action="{{ url_for('tasks.add_comment', task_id=task.id) }}">
             {{ form.hidden_tag() }}
-            <div class="form-group">
-                {{ form.content(rows=2, placeholder="Write a comment...") }}
+            <div class="form-group" style="margin-bottom:0.5rem">
+                {{ form.content(placeholder="Add a comment...", rows=2) }}
             </div>
             <button type="submit" class="btn btn-primary btn-sm">Comment</button>
         </form>
-        {% endif %}
-        {% endif %}
     </div>
+    {% endif %}
 </div>
 {% endblock %}

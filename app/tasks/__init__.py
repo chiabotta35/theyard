@@ -1,10 +1,10 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SelectField, HiddenField
+from wtforms import StringField, TextAreaField, SelectField, HiddenField, DateField
 from wtforms.validators import DataRequired
 
-from ..models import db, Task, Comment, User, PROJECT_STATUSES
+from ..models import db, Task, Comment, User, Label, TaskLabel, PROJECT_STATUSES, log_activity
 from ..webhooks import fire_webhook, build_task_payload, build_comment_payload
 
 tasks_bp = Blueprint("tasks", __name__, url_prefix="/tasks")
@@ -15,8 +15,10 @@ class TaskForm(FlaskForm):
     description = TextAreaField("Description")
     status = SelectField("Status", choices=[(s, s.replace("_", " ").title()) for s in ["todo", "in_progress", "review", "done"]])
     priority = SelectField("Priority", choices=[(p, p.title()) for p in ["low", "medium", "high", "critical"]])
-    assignee_id = SelectField("Assignee", coerce=lambda x: int(x) if x else None)
+    assignee_id = SelectField("Assignee", coerce=lambda x: int(x) if x and str(x).strip() else None)
+    due_date = DateField("Due Date", format="%Y-%m-%d", validators=[], default=None)
     project_id = HiddenField("Project ID")
+    labels = HiddenField("Labels")
 
 
 class CommentForm(FlaskForm):
@@ -50,8 +52,10 @@ def detail_task(task_id):
         return redirect(url_for("projects.list_projects"))
     form = CommentForm()
     comments = task.comments.order_by(Comment.created_at).all()
+    task_labels = [tl.label for tl in task.task_labels]
     return render_template(
-        "tasks/detail.html", task=task, form=form, comments=comments
+        "tasks/detail.html", task=task, form=form, comments=comments,
+        task_labels=task_labels,
     )
 
 
@@ -69,10 +73,12 @@ def create_task(project_id):
     form = TaskForm()
     form.assignee_id.choices = _assignee_choices(project_id)
     form.project_id.data = str(project_id)
+    labels = Label.query.filter_by(project_id=project_id).order_by(Label.name).all()
     if form.validate_on_submit():
         max_pos = db.session.query(db.func.max(Task.position)).filter_by(
             project_id=project_id
         ).scalar() or 0
+        due = form.due_date.data if form.due_date.data else None
         task = Task(
             project_id=project_id,
             title=form.title.data,
@@ -82,14 +88,22 @@ def create_task(project_id):
             assignee_id=form.assignee_id.data,
             created_by=current_user.id,
             position=max_pos + 1,
+            due_date=due,
         )
         db.session.add(task)
+        db.session.flush()
+        selected = form.labels.data or ""
+        for lid in selected.split(","):
+            lid = lid.strip()
+            if lid.isdigit():
+                db.session.add(TaskLabel(task_id=task.id, label_id=int(lid)))
+        log_activity(project_id, current_user.id, "created", "task", task.id, task.title)
         db.session.commit()
         fire_webhook("task.created", build_task_payload(task, "created"))
         flash(f"Task '{task.title}' created.", "success")
         return redirect(url_for("tasks.detail_task", task_id=task.id))
     return render_template(
-        "tasks/form.html", form=form, title="Create Task", project=project
+        "tasks/form.html", form=form, title="Create Task", project=project, labels=labels
     )
 
 
@@ -106,6 +120,8 @@ def edit_task(task_id):
     form = TaskForm(obj=task)
     form.assignee_id.choices = _assignee_choices(task.project_id)
     form.project_id.data = str(task.project_id)
+    labels = Label.query.filter_by(project_id=task.project_id).order_by(Label.name).all()
+    existing_label_ids = [str(tl.label_id) for tl in task.task_labels]
     if form.validate_on_submit():
         old_status = task.status
         task.title = form.title.data
@@ -113,14 +129,23 @@ def edit_task(task_id):
         task.status = form.status.data
         task.priority = form.priority.data
         task.assignee_id = form.assignee_id.data
+        task.due_date = form.due_date.data if form.due_date.data else None
+        TaskLabel.query.filter_by(task_id=task.id).delete()
+        selected = form.labels.data or ""
+        for lid in selected.split(","):
+            lid = lid.strip()
+            if lid.isdigit():
+                db.session.add(TaskLabel(task_id=task.id, label_id=int(lid)))
         db.session.commit()
         fire_webhook("task.updated", build_task_payload(task, "updated"))
         if task.status != old_status:
             fire_webhook("task.status_changed", build_task_payload(task, "status_changed"))
         flash(f"Task '{task.title}' updated.", "success")
         return redirect(url_for("tasks.detail_task", task_id=task.id))
+    form.due_date.data = task.due_date
     return render_template(
-        "tasks/form.html", form=form, title="Edit Task", project=task.project
+        "tasks/form.html", form=form, title="Edit Task", project=task.project,
+        labels=labels, existing_label_ids=existing_label_ids,
     )
 
 
@@ -135,6 +160,7 @@ def delete_task(task_id):
         flash("Access denied.", "danger")
         return redirect(url_for("tasks.detail_task", task_id=task_id))
     project_id = task.project_id
+    log_activity(project_id, current_user.id, "deleted", "task", task.id, task.title)
     payload = build_task_payload(task, "deleted")
     db.session.delete(task)
     db.session.commit()
@@ -159,6 +185,7 @@ def add_comment(task_id):
             task_id=task_id, user_id=current_user.id, content=form.content.data
         )
         db.session.add(comment)
+        log_activity(task.project_id, current_user.id, "commented", "task", task.id, task.title, detail=form.content.data[:200])
         db.session.commit()
         fire_webhook("comment.created", build_comment_payload(comment, "created"))
         flash("Comment added.", "success")
@@ -178,6 +205,7 @@ def update_status(task_id):
         return {"error": "invalid status"}, 400
     old_status = task.status
     task.status = new_status
+    log_activity(task.project_id, current_user.id, "moved", "task", task.id, task.title, detail=f"{old_status} → {new_status}")
     db.session.commit()
     fire_webhook("task.updated", build_task_payload(task, "updated"))
     if task.status != old_status:

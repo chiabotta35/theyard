@@ -53,6 +53,11 @@ def fire_webhook(event, payload):
 
 
 def build_task_payload(task, action=None):
+    labels = []
+    try:
+        labels = [tl.label.name for tl in task.task_labels]
+    except Exception:
+        pass
     return {
         "task_id": task.id,
         "title": task.title,
@@ -62,6 +67,8 @@ def build_task_payload(task, action=None):
         "project_name": task.project.name if task.project else None,
         "assignee": task.assignee.username if task.assignee else None,
         "created_by": task.creator.username if task.creator else None,
+        "due_date": task.due_date.isoformat() if task.due_date else None,
+        "labels": labels,
         "action": action,
     }
 

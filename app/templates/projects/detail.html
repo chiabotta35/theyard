@@ -9,9 +9,11 @@
         </div>
         <div style="display:flex;gap:0.4rem">
             <a href="{{ url_for('kanban.board', project_id=project.id) }}" class="btn btn-ghost btn-sm">Board</a>
+            <a href="{{ url_for('projects.project_activity', project_id=project.id) }}" class="btn btn-ghost btn-sm">Activity</a>
             {% if role == 'admin' %}
             <a href="{{ url_for('projects.edit_project', project_id=project.id) }}" class="btn btn-ghost btn-sm">Edit</a>
             <a href="{{ url_for('projects.project_permissions', project_id=project.id) }}" class="btn btn-ghost btn-sm">Permissions</a>
+            <a href="{{ url_for('projects.project_labels', project_id=project.id) }}" class="btn btn-ghost btn-sm">Labels</a>
             {% endif %}
             {% if role in ['admin', 'editor'] %}
             <a href="{{ url_for('tasks.create_task', project_id=project.id) }}" class="btn btn-primary btn-sm">+ Task</a>
@@ -37,6 +39,8 @@
                     <th>Status</th>
                     <th>Priority</th>
                     <th>Assignee</th>
+                    <th>Due</th>
+                    <th>Labels</th>
                 </tr>
             </thead>
             <tbody>
@@ -46,6 +50,18 @@
                     <td><span class="badge badge-{{ task.status }}">{{ task.status.replace('_', ' ') }}</span></td>
                     <td><span class="badge badge-{{ task.priority }}">{{ task.priority }}</span></td>
                     <td style="color:var(--text-muted)">{{ task.assignee.username if task.assignee else '—' }}</td>
+                    <td style="font-family:var(--mono);font-size:0.75rem">
+                        {% if task.due_date %}
+                        <span style="color:{% if task.due_date.isoformat() < now %}var(--danger){% elif task.due_date.isoformat() == now %}var(--warning){% else %}var(--text-muted){% endif %}">
+                            {{ task.due_date.strftime('%b %d') }}
+                        </span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>
+                        {% for tl in task.task_labels %}
+                        <span class="task-label task-label-sm" style="background:{{ tl.label.color }}20;color:{{ tl.label.color }}">{{ tl.label.name }}</span>
+                        {% endfor %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

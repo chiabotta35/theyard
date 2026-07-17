@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Activity — {{ project.name }} — TheYard{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Activity <span style="color:var(--text-muted);font-weight:400;font-size:0.85rem">{{ project.name }}</span></h1>
+        <a href="{{ url_for('projects.detail_project', project_id=project.id) }}" class="btn btn-ghost btn-sm">Back</a>
+    </div>
+
+    {% if activities %}
+    <div class="card" style="padding:0;overflow:hidden;max-width:700px">
+        <table>
+            <thead><tr><th>When</th><th>User</th><th>Action</th><th>Detail</th></tr></thead>
+            <tbody>
+                {% for a in activities %}
+                <tr>
+                    <td style="font-family:var(--mono);font-size:0.7rem;color:var(--text-muted);white-space:nowrap">{{ a.created_at.strftime('%b %d %H:%M') }}</td>
+                    <td style="font-weight:500;font-size:0.8rem">{{ a.user.username }}</td>
+                    <td style="font-size:0.8rem">
+                        <span style="color:var(--text-secondary)">
+                            {{ a.action }}
+                            <span style="color:var(--text)">{{ a.entity_type }}</span>
+                        </span>
+                        {% if a.entity_id %}
+                        <span style="color:var(--text-muted);font-family:var(--mono);font-size:0.7rem">#{{ a.entity_id }}</span>
+                        {% endif %}
+                        <span style="color:var(--accent);font-weight:500">{{ a.entity_name }}</span>
+                    </td>
+                    <td style="font-size:0.75rem;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis">{{ a.detail or '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card empty-state">
+        <p>No activity yet</p>
+        <p style="font-size:0.8rem;margin-top:0.25rem">Actions on tasks will appear here</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

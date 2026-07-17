@@ -177,6 +177,10 @@ class ProjectPermission(db.Model):
 TASK_STATUSES = ["todo", "in_progress", "review", "done"]
 TASK_PRIORITIES = ["low", "medium", "high", "critical"]
 PROJECT_STATUSES = ["draft", "active", "archived"]
+LABEL_COLORS = [
+    "var(--accent)", "var(--success)", "var(--warning)",
+    "var(--danger)", "var(--orange)", "#a78bfa", "#f472b6", "#38bdf8",
+]
 
 
 class Task(db.Model):
@@ -191,6 +195,7 @@ class Task(db.Model):
     assignee_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     position = db.Column(db.Integer, default=0, nullable=False)
+    due_date = db.Column(db.Date, nullable=True)
     created_at = db.Column(
         db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
@@ -262,3 +267,64 @@ class Webhook(db.Model):
 
     def set_events_list(self, event_list):
         self.events = ",".join(event_list)
+
+
+class Label(db.Model):
+    __tablename__ = "labels"
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("projects.id"), nullable=False)
+    name = db.Column(db.String(40), nullable=False)
+    color = db.Column(db.String(30), nullable=False, default="var(--accent)")
+    created_at = db.Column(
+        db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    project = db.relationship("Project", backref="labels")
+
+
+class TaskLabel(db.Model):
+    __tablename__ = "task_labels"
+
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.Integer, db.ForeignKey("tasks.id"), nullable=False)
+    label_id = db.Column(db.Integer, db.ForeignKey("labels.id"), nullable=False)
+
+    task = db.relationship("Task", backref="task_labels")
+    label = db.relationship("Label", backref="label_tasks")
+
+    __table_args__ = (
+        db.UniqueConstraint("task_id", "label_id", name="uq_task_label"),
+    )
+
+
+class ActivityLog(db.Model):
+    __tablename__ = "activity_log"
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("projects.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    action = db.Column(db.String(50), nullable=False)
+    entity_type = db.Column(db.String(20), nullable=False)
+    entity_id = db.Column(db.Integer, nullable=True)
+    entity_name = db.Column(db.String(200), nullable=False, default="")
+    detail = db.Column(db.Text, nullable=True)
+    created_at = db.Column(
+        db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    project = db.relationship("Project", backref="activities")
+    user = db.relationship("User", backref="activities")
+
+
+def log_activity(project_id, user_id, action, entity_type, entity_id, entity_name, detail=None):
+    entry = ActivityLog(
+        project_id=project_id,
+        user_id=user_id,
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        entity_name=entity_name,
+        detail=detail,
+    )
+    db.session.add(entry)

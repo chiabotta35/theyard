@@ -4,7 +4,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, SelectField
 from wtforms.validators import DataRequired
 
-from ..models import db, Project, ProjectPermission, User, Group
+from ..models import db, Project, ProjectPermission, User, Group, Label, TaskLabel, log_activity, LABEL_COLORS
 from ..webhooks import fire_webhook, build_project_payload
 
 projects_bp = Blueprint("projects", __name__, url_prefix="/projects")
@@ -209,3 +209,85 @@ def remove_permission(project_id, perm_id):
         db.session.commit()
         flash("Permission removed.", "success")
     return redirect(url_for("projects.project_permissions", project_id=project_id))
+
+
+# ── Labels ──────────────────────────────────────
+
+class LabelForm(FlaskForm):
+    name = StringField("Label Name", validators=[DataRequired()])
+    color = SelectField("Color", choices=[(c, c) for c in LABEL_COLORS])
+
+
+@projects_bp.route("/<int:project_id>/labels")
+@login_required
+def project_labels(project_id):
+    project = db.session.get(Project, project_id)
+    if not project:
+        flash("Project not found.", "danger")
+        return redirect(url_for("projects.list_projects"))
+    if not current_user.has_project_permission(project_id, "admin"):
+        flash("Access denied.", "danger")
+        return redirect(url_for("projects.detail_project", project_id=project_id))
+    labels = Label.query.filter_by(project_id=project_id).order_by(Label.name).all()
+    form = LabelForm()
+    return render_template(
+        "projects/labels.html", project=project, labels=labels, form=form,
+        label_colors=LABEL_COLORS,
+    )
+
+
+@projects_bp.route("/<int:project_id>/labels/add", methods=["POST"])
+@login_required
+def add_label(project_id):
+    project = db.session.get(Project, project_id)
+    if not project or not current_user.has_project_permission(project_id, "admin"):
+        flash("Access denied.", "danger")
+        return redirect(url_for("projects.list_projects"))
+    form = LabelForm()
+    if form.validate_on_submit():
+        existing = Label.query.filter_by(project_id=project_id, name=form.name.data.strip()).first()
+        if existing:
+            flash("Label already exists.", "warning")
+        else:
+            label = Label(project_id=project_id, name=form.name.data.strip(), color=form.color.data)
+            db.session.add(label)
+            db.session.commit()
+            flash(f"Label '{label.name}' created.", "success")
+    return redirect(url_for("projects.project_labels", project_id=project_id))
+
+
+@projects_bp.route("/<int:project_id>/labels/<int:label_id>/delete", methods=["POST"])
+@login_required
+def delete_label(project_id, label_id):
+    project = db.session.get(Project, project_id)
+    if not project or not current_user.has_project_permission(project_id, "admin"):
+        flash("Access denied.", "danger")
+        return redirect(url_for("projects.list_projects"))
+    label = db.session.get(Label, label_id)
+    if label and label.project_id == project_id:
+        TaskLabel.query.filter_by(label_id=label_id).delete()
+        db.session.delete(label)
+        db.session.commit()
+        flash("Label deleted.", "success")
+    return redirect(url_for("projects.project_labels", project_id=project_id))
+
+
+# ── Activity Log ────────────────────────────────
+
+@projects_bp.route("/<int:project_id>/activity")
+@login_required
+def project_activity(project_id):
+    project = db.session.get(Project, project_id)
+    if not project:
+        flash("Project not found.", "danger")
+        return redirect(url_for("projects.list_projects"))
+    if not current_user.has_project_permission(project_id):
+        flash("Access denied.", "danger")
+        return redirect(url_for("projects.list_projects"))
+    from ..models import ActivityLog
+    activities = ActivityLog.query.filter_by(project_id=project_id).order_by(
+        ActivityLog.created_at.desc()
+    ).limit(100).all()
+    return render_template(
+        "projects/activity.html", project=project, activities=activities
+    )

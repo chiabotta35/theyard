@@ -6,7 +6,7 @@
         <h1>{{ title }}</h1>
     </div>
     <div class="card" style="max-width:560px">
-        <form method="POST">
+        <form method="POST" id="task-form">
             {{ form.hidden_tag() }}
             {{ form.project_id() }}
             <div class="form-group">
@@ -28,10 +28,32 @@
                     {{ form.priority(id="priority") }}
                 </div>
             </div>
-            <div class="form-group">
-                <label for="assignee_id">Assignee</label>
-                {{ form.assignee_id(id="assignee_id") }}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+                <div class="form-group">
+                    <label for="assignee_id">Assignee</label>
+                    {{ form.assignee_id(id="assignee_id") }}
+                </div>
+                <div class="form-group">
+                    <label for="due_date">Due Date</label>
+                    {{ form.due_date(id="due_date", type="date") }}
+                </div>
             </div>
+            {% if labels %}
+            <div class="form-group">
+                <label>Labels</label>
+                <div class="label-picker" id="label-picker">
+                    {% set selected = existing_label_ids if existing_label_ids else [] %}
+                    {% for lbl in labels %}
+                    <button type="button" class="label-chip {% if lbl.id|string in selected %}label-selected{% endif %}"
+                            data-id="{{ lbl.id }}" onclick="toggleLabel(this)"
+                            style="--chip-color:{{ lbl.color }}">
+                        {{ lbl.name }}
+                    </button>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="labels" id="labels-hidden" value="{{ selected|join(',') if selected else '' }}">
+            </div>
+            {% endif %}
             <div style="display:flex;gap:0.5rem">
                 <button type="submit" class="btn btn-primary">Save</button>
                 <a href="{{ url_for('projects.detail_project', project_id=project.id) }}" class="btn btn-ghost">Cancel</a>
@@ -39,4 +61,14 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleLabel(btn) {
+    btn.classList.toggle('label-selected');
+    const selected = [...document.querySelectorAll('.label-chip.label-selected')].map(b => b.dataset.id);
+    document.getElementById('labels-hidden').value = selected.join(',');
+}
+</script>
 {% endblock %}

@@ -33,14 +33,42 @@
                      ondragstart="handleDragStart(event)"
                      ondragend="handleDragEnd(event)">
                     <a href="{{ url_for('tasks.detail_task', task_id=task.id) }}" class="kanban-card-title" style="color:var(--text)">{{ task.title }}</a>
+                    {% if task.task_labels %}
+                    <div class="kanban-card-labels">
+                        {% for tl in task.task_labels %}
+                        <span class="task-label task-label-sm" style="background:{{ tl.label.color }}20;color:{{ tl.label.color }}">{{ tl.label.name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                     <div class="kanban-card-meta">
                         <span class="badge badge-{{ task.priority }}">{{ task.priority }}</span>
+                        {% if task.due_date %}
+                        <span style="font-family:var(--mono);font-size:0.65rem;color:{% if task.due_date < now %}var(--danger){% elif task.due_date.isoformat() == now %}var(--warning){% else %}var(--text-muted){% endif %}">
+                            {{ task.due_date.strftime('%b %d') }}
+                        </span>
+                        {% endif %}
                         {% if task.assignee %}
                         <span>{{ task.assignee.username }}</span>
                         {% endif %}
                     </div>
                 </div>
                 {% endfor %}
+
+                {% if role in ['admin', 'editor'] %}
+                <div class="quick-create" id="quick-create-{{ status_key }}" style="display:none">
+                    <input type="text" class="quick-create-input" id="quick-input-{{ status_key }}"
+                           placeholder="Task title..."
+                           onkeydown="if(event.key==='Enter'){submitQuickCreate('{{ status_key }}');}if(event.key==='Escape'){hideQuickCreate('{{ status_key }}');}">
+                    <div style="display:flex;gap:0.3rem;margin-top:0.4rem">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="submitQuickCreate('{{ status_key }}')">Create</button>
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="hideQuickCreate('{{ status_key }}')">Cancel</button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin:0.25rem 0.5rem;width:calc(100% - 1rem);justify-content:center;opacity:0.5"
+                        id="show-quick-{{ status_key }}" onclick="showQuickCreate('{{ status_key }}')">
+                    + Quick add
+                </button>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
@@ -74,6 +102,41 @@ function handleDrop(e, newStatus) {
         if (r.ok) location.reload();
     });
     draggedTaskId = null;
+}
+
+function showQuickCreate(status) {
+    document.getElementById('show-quick-' + status).style.display = 'none';
+    const box = document.getElementById('quick-create-' + status);
+    box.style.display = 'block';
+    document.getElementById('quick-input-' + status).focus();
+}
+
+function hideQuickCreate(status) {
+    document.getElementById('quick-create-' + status).style.display = 'none';
+    document.getElementById('show-quick-' + status).style.display = '';
+    document.getElementById('quick-input-' + status).value = '';
+}
+
+function submitQuickCreate(status) {
+    const input = document.getElementById('quick-input-' + status);
+    const title = input.value.trim();
+    if (!title) return;
+
+    fetch('{{ url_for("tasks.create_task", project_id=project.id) }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            title: title,
+            status: status,
+            priority: 'medium',
+            description: '',
+            labels: '',
+            project_id: '{{ project.id }}',
+            csrf_token: '{{ csrf_token() }}'
+        })
+    }).then(r => {
+        if (r.ok || r.redirected) location.reload();
+    });
 }
 </script>
 {% endblock %}

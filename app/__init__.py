@@ -2,7 +2,8 @@ import os
 import logging
 from pathlib import Path
 from flask import Flask, redirect, url_for
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
+from datetime import date
 from flask_migrate import Migrate
 
 from .config import Config
@@ -77,11 +78,27 @@ def create_app():
     def inject_globals():
         from .models import TASK_STATUSES, TASK_PRIORITIES, PROJECT_STATUSES
 
+        sidebar_projects = []
+        if current_user.is_authenticated:
+            from .models import Project, ProjectPermission
+            if current_user.can_manage_all_projects():
+                sidebar_projects = Project.query.order_by(Project.updated_at.desc()).limit(20).all()
+            else:
+                project_ids = set()
+                for perm in ProjectPermission.query.filter(ProjectPermission.user_id == current_user.id).all():
+                    project_ids.add(perm.project_id)
+                for m in current_user.group_memberships:
+                    for perm in ProjectPermission.query.filter(ProjectPermission.group_id == m.group_id).all():
+                        project_ids.add(perm.project_id)
+                sidebar_projects = Project.query.filter(Project.id.in_(project_ids)).order_by(Project.updated_at.desc()).limit(20).all()
+
         return {
             "task_statuses": TASK_STATUSES,
             "task_priorities": TASK_PRIORITIES,
             "project_statuses": PROJECT_STATUSES,
             "app_version": VERSION,
+            "sidebar_projects": sidebar_projects,
+            "now": date.today().isoformat(),
         }
 
     with app.app_context():
