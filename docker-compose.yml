@@ -10,7 +10,7 @@ services:
       - ./data:/app/data
     environment:
       - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
-      - DATABASE_URL=sqlite:///data/theyard.db
+      - DATABASE_URL=sqlite:////app/data/theyard.db
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
