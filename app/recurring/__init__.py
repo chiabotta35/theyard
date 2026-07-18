@@ -46,6 +46,22 @@ def _next_task_number(project_id):
     return (max_num or 0) + 1
 
 
+@recurring_bp.route("/")
+@login_required
+def list_recurring_all():
+    project_ids = []
+    for p in Project.query.all():
+        if current_user.has_project_permission(p.id, "viewer"):
+            project_ids.append(p.id)
+    tasks = (
+        RecurringTask.query
+        .filter(RecurringTask.project_id.in_(project_ids))
+        .order_by(RecurringTask.created_at.desc())
+        .all()
+    )
+    return render_template("recurring/all.html", tasks=tasks)
+
+
 @recurring_bp.route("/project/<int:project_id>")
 @login_required
 def list_recurring(project_id):

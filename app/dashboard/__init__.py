@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import date, timedelta
+from collections import Counter
 
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
@@ -82,6 +83,24 @@ def index():
         .all()
     )
 
+    # Aggregate stats for charts
+    all_my_tasks = Task.query.filter(Task.assignee_id == current_user.id).all()
+    status_counts = Counter(t.status for t in all_my_tasks)
+    priority_counts = Counter(t.priority for t in all_my_tasks if t.status != "done")
+
+    # Activity last 7 days
+    week_ago = date.today() - timedelta(days=6)
+    activity_days = []
+    for i in range(7):
+        d = week_ago + timedelta(days=i)
+        day_label = d.strftime("%a")
+        count = ActivityLog.query.filter(
+            ActivityLog.project_id.in_(project_ids),
+            db.func.date(ActivityLog.created_at) == d,
+        ).count()
+        activity_days.append({"label": day_label, "count": count})
+    max_activity = max((d["count"] for d in activity_days), default=1) or 1
+
     return render_template(
         "dashboard/index.html",
         my_tasks=my_tasks,
@@ -90,6 +109,11 @@ def index():
         recent_activity=recent_activity,
         project_stats=project_stats,
         unread_notifications=unread_notifications,
+        status_counts=status_counts,
+        priority_counts=priority_counts,
+        activity_days=activity_days,
+        max_activity=max_activity,
+        total_my_tasks=len(all_my_tasks),
     )
 
 

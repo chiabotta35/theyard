@@ -25,6 +25,69 @@
         </div>
     </div>
 
+    <!-- ── Charts Row ── -->
+    <div class="charts-row">
+        <!-- Status Donut -->
+        <div class="chart-card">
+            <div class="chart-title">Task Status</div>
+            <div class="chart-body" style="display:flex;align-items:center;gap:1.5rem">
+                {% set sc = status_counts %}
+                {% set total = total_my_tasks or 1 %}
+                {% set todo_pct = (sc.get('todo', 0) / total * 100) %}
+                {% set prog_pct = (sc.get('in_progress', 0) / total * 100) %}
+                {% set rev_pct = (sc.get('review', 0) / total * 100) %}
+                {% set done_pct = (sc.get('done', 0) / total * 100) %}
+                {% set a = todo_pct %}
+                {% set b = a + prog_pct %}
+                {% set c = b + rev_pct %}
+                <div class="donut" style="background:conic-gradient(var(--text-dim) 0% {{ a }}%, var(--blue) {{ a }}% {{ b }}%, var(--orange) {{ b }}% {{ c }}%, var(--success) {{ c }}% 100%)">
+                    <div class="donut-hole">
+                        <div class="donut-number">{{ total_my_tasks }}</div>
+                        <div class="donut-sub">tasks</div>
+                    </div>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item"><span class="legend-dot" style="background:var(--text-dim)"></span>To Do <span class="legend-val">{{ sc.get('todo', 0) }}</span></div>
+                    <div class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span>In Progress <span class="legend-val">{{ sc.get('in_progress', 0) }}</span></div>
+                    <div class="legend-item"><span class="legend-dot" style="background:var(--orange)"></span>Review <span class="legend-val">{{ sc.get('review', 0) }}</span></div>
+                    <div class="legend-item"><span class="legend-dot" style="background:var(--success)"></span>Done <span class="legend-val">{{ sc.get('done', 0) }}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Priority Bars -->
+        <div class="chart-card">
+            <div class="chart-title">By Priority</div>
+            <div class="chart-body">
+                {% set priorities = [('critical', 'var(--danger)'), ('high', 'var(--orange)'), ('medium', 'var(--blue)'), ('low', 'var(--text-dim)')] %}
+                {% set max_pri = [priority_counts.get('critical',0), priority_counts.get('high',0), priority_counts.get('medium',0), priority_counts.get('low',0)]|max or 1 %}
+                {% for pname, pcolor in priorities %}
+                {% set pval = priority_counts.get(pname, 0) %}
+                <div class="bar-row">
+                    <span class="bar-label">{{ pname }}</span>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width:{{ (pval / max_pri * 100)|int }}%;background:{{ pcolor }}"></div>
+                    </div>
+                    <span class="bar-val">{{ pval }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Activity Sparkline -->
+        <div class="chart-card">
+            <div class="chart-title">Activity (7 days)</div>
+            <div class="chart-body" style="display:flex;align-items:flex-end;gap:4px;height:80px;padding-top:4px">
+                {% for day in activity_days %}
+                <div class="spark-col">
+                    <div class="spark-bar" style="height:{{ (day.count / max_activity * 100)|int }}%"></div>
+                    <div class="spark-label">{{ day.label }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
     {% if project_stats %}
     <div class="section-header">
         <span class="mono-label">Project Stats</span>
@@ -32,19 +95,57 @@
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.5rem;margin-bottom:1.5rem">
         {% for ps in project_stats %}
         <a href="{{ url_for('projects.detail_project', project_id=ps.project.id) }}" class="card" style="text-decoration:none;color:inherit;padding:1rem;transition:border-color 0.15s">
-            <div style="font-weight:500;margin-bottom:0.5rem;font-size:0.9rem">{{ ps.project.name }}</div>
-            <div style="display:flex;gap:0.35rem;flex-wrap:wrap">
-                {% for status, count in ps.stats.items() if status != 'total' and count > 0 %}
-                <span class="tag tag-{{ status }}">{{ status.replace('_', ' ') }}: {{ count }}</span>
-                {% endfor %}
+            <div style="font-weight:500;margin-bottom:0.5rem;font-size:0.9rem;display:flex;align-items:center;gap:0.4rem">
+                <div class="sidebar-project-dot" style="background:{{ ps.project.color or '#00e676' }}"></div>
+                {{ ps.project.name }}
             </div>
+            {% set proj_total = ps.stats.total or 1 %}
+            <div class="mini-bar" style="margin-bottom:0.5rem">
+                {% if ps.stats.todo %}<div class="mini-seg" style="flex:{{ ps.stats.todo }};background:var(--text-dim)" title="To Do: {{ ps.stats.todo }}"></div>{% endif %}
+                {% if ps.stats.in_progress %}<div class="mini-seg" style="flex:{{ ps.stats.in_progress }};background:var(--blue)" title="In Progress: {{ ps.stats.in_progress }}"></div>{% endif %}
+                {% if ps.stats.review %}<div class="mini-seg" style="flex:{{ ps.stats.review }};background:var(--orange)" title="Review: {{ ps.stats.review }}"></div>{% endif %}
+                {% if ps.stats.done %}<div class="mini-seg" style="flex:{{ ps.stats.done }};background:var(--success)" title="Done: {{ ps.stats.done }}"></div>{% endif %}
+            </div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted)">{{ ps.stats.total }} tasks</div>
         </a>
         {% endfor %}
     </div>
     {% endif %}
 
+    {% if overdue %}
+    <div class="section-header" id="overdue">
+        <span class="mono-label" style="color:var(--danger)">Overdue ({{ overdue|length }})</span>
+    </div>
+    <div style="margin-bottom:1.5rem;border:1px solid var(--danger);border-radius:2px;overflow-x:auto">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Project</th>
+                    <th>Priority</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in overdue %}
+                <tr>
+                    <td><span class="mono-label">{{ task.display_id }}</span></td>
+                    <td><a href="{{ url_for('tasks.detail_task', task_id=task.id) }}" style="color:var(--danger)">{{ task.title }}</a></td>
+                    <td>{{ task.project.name }}</td>
+                    <td><span class="task-label task-label-{{ task.priority }}">{{ task.priority }}</span></td>
+                    <td><span style="font-family:var(--mono);font-size:0.7rem;color:var(--danger)">{{ task.due_date.strftime('%b %d, %Y') }}</span></td>
+                    <td><span class="task-label task-label-{{ task.status }}">{{ task.status.replace('_', ' ') }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
     {% if my_tasks %}
-    <div class="section-header">
+    <div class="section-header" id="my-tasks">
         <span class="mono-label">My Tasks ({{ my_tasks|length }})</span>
     </div>
     <div style="margin-bottom:1.5rem;overflow-x:auto">
@@ -83,40 +184,8 @@
     <div class="empty-state">No active tasks assigned to you</div>
     {% endif %}
 
-    {% if overdue %}
-    <div class="section-header">
-        <span class="mono-label" style="color:var(--danger)">Overdue ({{ overdue|length }})</span>
-    </div>
-    <div style="margin-bottom:1.5rem;border:1px solid var(--danger);border-radius:2px;overflow-x:auto">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Project</th>
-                    <th>Priority</th>
-                    <th>Due Date</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for task in overdue %}
-                <tr>
-                    <td><span class="mono-label">{{ task.display_id }}</span></td>
-                    <td><a href="{{ url_for('tasks.detail_task', task_id=task.id) }}" style="color:var(--danger)">{{ task.title }}</a></td>
-                    <td>{{ task.project.name }}</td>
-                    <td><span class="task-label task-label-{{ task.priority }}">{{ task.priority }}</span></td>
-                    <td><span style="font-family:var(--mono);font-size:0.7rem;color:var(--danger)">{{ task.due_date.strftime('%b %d, %Y') }}</span></td>
-                    <td><span class="task-label task-label-{{ task.status }}">{{ task.status.replace('_', ' ') }}</span></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
-
     {% if recent_activity %}
-    <div class="section-header">
+    <div class="section-header" id="activity">
         <span class="mono-label">Recent Activity</span>
     </div>
     <div style="margin-bottom:1.5rem;overflow-x:auto">

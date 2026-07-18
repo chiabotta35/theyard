@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Recurring Tasks — Taskit{% endblock %}
+{% block topbar %}
+<div class="topbar">
+    <div class="topbar-project-name">Recurring Tasks</div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="content">
+    {% if tasks %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Project</th>
+                <th>Priority</th>
+                <th>Assignee</th>
+                <th>Interval</th>
+                <th>Next Due</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+            <tr>
+                <td><a href="{{ url_for('kanban.board', project_id=task.project_id) }}">{{ task.title }}</a></td>
+                <td>{{ task.project.name }}</td>
+                <td><span class="task-label task-label-{{ task.priority }}">{{ task.priority }}</span></td>
+                <td>{{ task.assignee.username if task.assignee else '—' }}</td>
+                <td><span class="mono-label">Every {{ task.interval_days }}d</span></td>
+                <td>
+                    {% if task.next_due %}
+                    <span class="mono-label" style="color:{% if task.next_due.isoformat() < now %}var(--danger){% else %}var(--text-muted){% endif %}">
+                        {{ task.next_due.strftime('%b %d') }}
+                    </span>
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">No recurring tasks across your projects</div>
+    {% endif %}
+</div>
+{% endblock %}
