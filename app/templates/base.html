@@ -34,28 +34,6 @@
                 </svg>
                 <span>Dashboard</span>
             </a>
-            <a href="{{ url_for('dashboard.index') }}#my-tasks" class="sidebar-nav-item">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <rect x="2" y="2" width="10" height="10" rx="1" stroke="currentColor" stroke-width="1.2"/>
-                    <path d="M5 5l2 2 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span>My Tasks</span>
-            </a>
-            <a href="{{ url_for('recurring.list_recurring_all') }}" class="sidebar-nav-item {% if request.endpoint and 'recurring' in request.endpoint %}active{% endif %}">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M11.5 7a4.5 4.5 0 01-8.36 2.17" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                    <path d="M2.5 7a4.5 4.5 0 018.36-2.17" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                    <path d="M10 3v2.5H7.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M4 11V8.5H6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span>Recurring</span>
-            </a>
-            <a href="{{ url_for('dashboard.index') }}#activity" class="sidebar-nav-item">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M1 10l3-4 3 2 3-5 3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span>Activity</span>
-            </a>
         </nav>
 
         <div class="sidebar-projects" id="sidebar-projects">
@@ -90,10 +68,10 @@
             <!-- Settings Panel -->
             <div class="settings-panel" id="settings-panel">
                 <div class="settings-panel-header">
-                    <span class="mono-label" style="color:var(--text-dim)">THEME</span>
+                    <span class="mono-label" style="color:var(--text-dim)">COLOR</span>
                 </div>
                 <div class="settings-theme-grid">
-                    <button class="theme-dot" style="background:#00e676" onclick="setTheme('dark')" title="Dark (Green)"></button>
+                    <button class="theme-dot" style="background:#00e676" onclick="setTheme('dark')" title="Green"></button>
                     <button class="theme-dot" style="background:#7c8cff" onclick="setTheme('midnight')" title="Midnight"></button>
                     <button class="theme-dot" style="background:#38bdf8" onclick="setTheme('ocean')" title="Ocean"></button>
                     <button class="theme-dot" style="background:#4ade80" onclick="setTheme('forest')" title="Forest"></button>
