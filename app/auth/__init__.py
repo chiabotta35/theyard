@@ -91,6 +91,31 @@ def logout():
     return redirect(url_for("auth.login"))
 
 
+class ProfileForm(FlaskForm):
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    current_password = PasswordField("Current Password")
+    new_password = PasswordField("New Password", validators=[Length(min=6)])
+    confirm_password = PasswordField("Confirm Password", validators=[EqualTo("new_password", message="Passwords must match")])
+
+
+@auth_bp.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    form = ProfileForm(obj=current_user)
+    if form.validate_on_submit():
+        if form.current_password.data and not current_user.check_password(form.current_password.data):
+            flash("Current password is incorrect.", "error")
+        else:
+            current_user.email = form.email.data
+            if form.new_password.data:
+                current_user.set_password(form.new_password.data)
+            from ..models import db
+            db.session.commit()
+            flash("Profile updated.", "success")
+            return redirect(url_for("auth.profile"))
+    return render_template("auth/profile.html", form=form)
+
+
 THEMES = ["dark", "light", "midnight", "ocean", "forest", "sunset", "rose"]
 
 
