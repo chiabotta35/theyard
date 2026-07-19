@@ -1,6 +1,6 @@
 services:
   web:
-    image: ghcr.io/chiabotta35/taskit:1.0.0
+    image: ghcr.io/chiabotta35/taskit:latest
     container_name: taskit
     restart: unless-stopped
     pull_policy: always
