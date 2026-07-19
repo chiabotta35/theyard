@@ -116,7 +116,7 @@ def profile():
     return render_template("auth/profile.html", form=form)
 
 
-THEMES = ["dark", "light", "midnight", "ocean", "forest", "sunset", "rose"]
+THEMES = ["dark", "light", "midnight", "ocean", "forest", "sunset", "rose", "ember", "lavender", "arctic", "neon", "amber"]
 
 
 @auth_bp.route("/theme/<theme_name>", methods=["POST"])

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta, datetime
 
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
@@ -82,6 +82,112 @@ def index():
         .all()
     )
 
+    total_tasks = len(my_tasks)
+    done_this_week = Task.query.filter(
+        Task.assignee_id == current_user.id,
+        Task.status == "done",
+        Task.updated_at >= datetime.combine(today - timedelta(days=today.weekday()), datetime.min.time()),
+    ).count()
+
+    active_projects = len(project_stats)
+    completed_count = sum(ps["stats"].get("done", 0) for ps in project_stats)
+    total_count = sum(ps["stats"].get("total", 0) for ps in project_stats)
+
+    stale_days = 14
+    stale_projects = []
+    if project_ids:
+        projects_list = Project.query.filter(Project.id.in_(project_ids)).all()
+        for proj in projects_list:
+            age = (today - proj.updated_at.date()).days if proj.updated_at else 0
+            if age >= stale_days:
+                stale_projects.append({"project": proj, "days": age})
+
+    overdue_all = (
+        Task.query
+        .filter(
+            Task.project_id.in_(project_ids),
+            Task.due_date < today,
+            Task.status != "done",
+        )
+        .count()
+    )
+
+    due_today = (
+        Task.query
+        .filter(
+            Task.project_id.in_(project_ids),
+            Task.due_date == today,
+            Task.status != "done",
+        )
+        .count()
+    )
+
+    due_tomorrow = (
+        Task.query
+        .filter(
+            Task.project_id.in_(project_ids),
+            Task.due_date == today + timedelta(days=1),
+            Task.status != "done",
+        )
+        .count()
+    )
+
+    heatmap_end = today
+    heatmap_start = today - timedelta(days=83)
+    activity_counts = {}
+    if project_ids:
+        logs = (
+            ActivityLog.query
+            .filter(
+                ActivityLog.project_id.in_(project_ids),
+                ActivityLog.action.in_(["completed", "created"]),
+                ActivityLog.created_at >= datetime.combine(heatmap_start, datetime.min.time()),
+            )
+            .all()
+        )
+        for log in logs:
+            day = log.created_at.date() if log.created_at else None
+            if day:
+                activity_counts[day] = activity_counts.get(day, 0) + 1
+
+    heatmap_data = []
+    current = heatmap_start
+    while current <= heatmap_end:
+        count = activity_counts.get(current, 0)
+        heatmap_data.append({"date": current.isoformat(), "count": count, "weekday": current.weekday()})
+        current += timedelta(days=1)
+
+    week_start = today - timedelta(days=today.weekday())
+    week_days = []
+    for i in range(7):
+        day = week_start + timedelta(days=i)
+        day_tasks = []
+        for t in my_tasks:
+            if t.due_date == day:
+                day_tasks.append({"title": t.title, "id": t.id, "priority": t.priority})
+        week_days.append({
+            "date": day,
+            "label": day.strftime("%a"),
+            "num": day.strftime("%d"),
+            "is_today": day == today,
+            "tasks": day_tasks,
+        })
+
+    digest = []
+    if due_today > 0:
+        digest.append({"color": "red", "text": f"{due_today} task{'s' if due_today != 1 else ''} due today"})
+    if overdue_all > 0:
+        digest.append({"color": "red", "text": f"{overdue_all} overdue task{'s' if overdue_all != 1 else ''} across all projects"})
+    if due_tomorrow > 0:
+        digest.append({"color": "yellow", "text": f"{due_tomorrow} due tomorrow"})
+    if done_this_week > 0:
+        digest.append({"color": "green", "text": f"You completed {done_this_week} task{'s' if done_this_week != 1 else ''} this week"})
+    if stale_projects:
+        oldest = max(stale_projects, key=lambda x: x["days"])
+        digest.append({"color": "blue", "text": f"'{oldest['project'].name}' hasn't been updated in {oldest['days']} days"})
+    if not digest:
+        digest.append({"color": "green", "text": "All clear — no pressing items"})
+
     return render_template(
         "dashboard/index.html",
         my_tasks=my_tasks,
@@ -90,6 +196,14 @@ def index():
         recent_activity=recent_activity,
         project_stats=project_stats,
         unread_notifications=unread_notifications,
+        total_tasks=total_tasks,
+        done_this_week=done_this_week,
+        active_projects=active_projects,
+        completed_count=completed_count,
+        total_count=total_count,
+        digest=digest,
+        heatmap_data=heatmap_data,
+        week_days=week_days,
     )
 
 

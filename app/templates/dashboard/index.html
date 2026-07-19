@@ -6,42 +6,79 @@
         <h1>Welcome back, {{ current_user.username }}</h1>
     </div>
 
-    <div class="stats-row">
-        <div class="stat-card">
-            <div class="stat-value">{{ my_tasks|length }}</div>
-            <div class="stat-label">My Tasks</div>
+    {% if overdue %}
+    <div class="overdue-banner">
+        <div class="overdue-banner-icon">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M9 5v4.5M9 12v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         </div>
-        <div class="stat-card">
-            <div class="stat-value"{% if overdue|length > 0 %} style="color:var(--danger)"{% endif %}>{{ overdue|length }}</div>
-            <div class="stat-label">Overdue</div>
+        <div class="overdue-banner-text">
+            <strong>{{ overdue|length }} overdue task{{ 's' if overdue|length != 1 else '' }}</strong> — these need attention
         </div>
-        <div class="stat-card">
-            <div class="stat-value">{{ project_stats|length }}</div>
-            <div class="stat-label">Projects</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">{{ unread_notifications|length }}</div>
-            <div class="stat-label">Unread</div>
+        <a href="{{ url_for('mytasks.index') }}" class="overdue-banner-link">view all →</a>
+    </div>
+    {% endif %}
+
+    <div class="digest-card">
+        <div class="digest-title">Today's Digest</div>
+        <div class="digest-items">
+            {% for item in digest %}
+            <div class="digest-item">
+                <div class="dot dot-{{ item.color }}"></div>
+                <span>{{ item.text }}</span>
+            </div>
+            {% endfor %}
         </div>
     </div>
 
-    {% if project_stats %}
-    <div class="section-header">
-        <span class="mono-label">Project Stats</span>
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-value" data-count="{{ total_tasks }}">0</div>
+            <div class="stat-label">My Tasks</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" data-count="{{ overdue|length }}"{% if overdue|length > 0 %} style="color:var(--danger)"{% endif %}>0</div>
+            <div class="stat-label">Overdue</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" data-count="{{ done_this_week }}">0</div>
+            <div class="stat-label">Done This Week</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" data-count="{{ active_projects }}">0</div>
+            <div class="stat-label">Projects</div>
+        </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.5rem;margin-bottom:1.5rem">
-        {% for ps in project_stats %}
-        <a href="{{ url_for('projects.detail_project', project_id=ps.project.id) }}" class="card" style="text-decoration:none;color:inherit;padding:1rem;transition:border-color 0.15s">
-            <div style="font-weight:500;margin-bottom:0.5rem;font-size:0.9rem">{{ ps.project.name }}</div>
-            <div style="display:flex;gap:0.35rem;flex-wrap:wrap">
-                {% for status, count in ps.stats.items() if status != 'total' and count > 0 %}
-                <span class="tag tag-{{ status }}">{{ status.replace('_', ' ') }}: {{ count }}</span>
-                {% endfor %}
-            </div>
-        </a>
+
+    <div class="section-header">
+        <span class="mono-label">This Week</span>
+    </div>
+    <div class="week-timeline">
+        {% for day in week_days %}
+        <div class="week-timeline-day{% if day.is_today %} today{% endif %}">
+            <div class="week-timeline-day-label">{{ day.label }}</div>
+            <div class="week-timeline-day-date">{{ day.num }}</div>
+            {% for t in day.tasks %}
+            <a href="{{ url_for('tasks.detail_task', task_id=t.id) }}" title="{{ t.title }}" class="week-timeline-dot {{ t.priority }}"></a>
+            {% endfor %}
+        </div>
         {% endfor %}
     </div>
-    {% endif %}
+
+    <div class="section-header">
+        <span class="mono-label">Activity (12 weeks)</span>
+    </div>
+    <div class="heatmap-container" id="heatmap" data-cells='{{ heatmap_data|tojson }}'>
+        <div class="heatmap-grid" id="heatmap-grid"></div>
+        <div class="heatmap-legend">
+            <span>Less</span>
+            <div class="heatmap-legend-cell" style="background:var(--border-subtle)"></div>
+            <div class="heatmap-legend-cell" style="background:var(--heatmap-1)"></div>
+            <div class="heatmap-legend-cell" style="background:var(--heatmap-2)"></div>
+            <div class="heatmap-legend-cell" style="background:var(--heatmap-3)"></div>
+            <div class="heatmap-legend-cell" style="background:var(--heatmap-4)"></div>
+            <span>More</span>
+        </div>
+    </div>
 
     {% if my_tasks %}
     <div class="section-header">
@@ -81,6 +118,24 @@
     </div>
     {% else %}
     <div class="empty-state">No active tasks assigned to you</div>
+    {% endif %}
+
+    {% if project_stats %}
+    <div class="section-header">
+        <span class="mono-label">Projects</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.5rem;margin-bottom:1.5rem">
+        {% for ps in project_stats %}
+        <a href="{{ url_for('projects.detail_project', project_id=ps.project.id) }}" class="card" style="text-decoration:none;color:inherit;padding:1rem;transition:border-color 0.15s">
+            <div style="font-weight:500;margin-bottom:0.5rem;font-size:0.9rem">{{ ps.project.name }}</div>
+            <div style="display:flex;gap:0.35rem;flex-wrap:wrap">
+                {% for status, count in ps.stats.items() if status != 'total' and count > 0 %}
+                <span class="tag tag-{{ status }}">{{ status.replace('_', ' ') }}: {{ count }}</span>
+                {% endfor %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
     {% endif %}
 
     {% if overdue %}
@@ -188,4 +243,77 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+(function() {
+    // Animated stat counters
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const el = entry.target;
+                const target = parseInt(el.dataset.count) || 0;
+                animateCount(el, target);
+                observer.unobserve(el);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('.stat-value[data-count]').forEach(el => observer.observe(el));
+
+    function animateCount(el, target) {
+        if (target === 0) { el.textContent = '0'; return; }
+        const duration = 600;
+        const start = performance.now();
+        el.classList.add('counting');
+        function step(now) {
+            const progress = Math.min((now - start) / duration, 1);
+            const ease = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.round(ease * target);
+            if (progress < 1) requestAnimationFrame(step);
+            else el.classList.remove('counting');
+        }
+        requestAnimationFrame(step);
+    }
+
+    // Heatmap
+    const heatmapEl = document.getElementById('heatmap');
+    const gridEl = document.getElementById('heatmap-grid');
+    if (heatmapEl && gridEl) {
+        const cells = JSON.parse(heatmapEl.dataset.cells || '[]');
+        const weeks = [];
+        cells.forEach(c => {
+            const d = new Date(c.date + 'T00:00:00');
+            const weekNum = Math.floor((d - new Date(cells[0].date + 'T00:00:00')) / 604800000);
+            if (!weeks[weekNum]) weeks[weekNum] = [];
+            weeks[weekNum].push(c);
+        });
+        const maxCount = Math.max(...cells.map(c => c.count), 1);
+        weeks.forEach(week => {
+            const col = document.createElement('div');
+            col.className = 'heatmap-week';
+            const pad = week[0].weekday;
+            for (let i = 0; i < pad; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'heatmap-cell';
+                empty.style.visibility = 'hidden';
+                col.appendChild(empty);
+            }
+            week.forEach(c => {
+                const cell = document.createElement('div');
+                cell.className = 'heatmap-cell';
+                cell.title = c.date + ': ' + c.count + ' events';
+                if (c.count > 0) {
+                    const ratio = c.count / maxCount;
+                    if (ratio > 0.75) cell.classList.add('level-4');
+                    else if (ratio > 0.5) cell.classList.add('level-3');
+                    else if (ratio > 0.25) cell.classList.add('level-2');
+                    else cell.classList.add('level-1');
+                }
+                col.appendChild(cell);
+            });
+            gridEl.appendChild(col);
+        });
+    }
+})();
+</script>
 {% endblock %}
