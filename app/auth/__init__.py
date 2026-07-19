@@ -14,6 +14,10 @@ class LoginForm(FlaskForm):
     password = PasswordField("Password", validators=[DataRequired()])
     remember = BooleanField("Remember Me")
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.meta.csrf = False
+
 
 class RegisterForm(FlaskForm):
     username = StringField(
@@ -64,6 +68,8 @@ def login():
             return redirect(next_page or url_for("dashboard.index"))
         flash("Invalid username or password.", "danger")
     return render_template("auth/login.html", form=form)
+
+auth_bp._csrf_exempt = [login]
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])

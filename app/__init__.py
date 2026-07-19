@@ -203,8 +203,6 @@ def create_app():
 
     @app.context_processor
     def inject_globals():
-        from flask import session as flask_session
-        from flask_wtf.csrf import generate_csrf
         from .models import TASK_STATUSES, TASK_PRIORITIES, PROJECT_STATUSES, Notification
 
         sidebar_projects = []
@@ -234,8 +232,6 @@ def create_app():
             "now": date.today().isoformat(),
             "unread_count": unread_count,
             "notifications": notifications,
-            "csrf_token": lambda: generate_csrf(),
-            "csrf_key": flask_session.get("csrf_token", ""),
         }
 
     with app.app_context():
