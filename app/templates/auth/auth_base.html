@@ -22,5 +22,11 @@
     {% endwith %}
     {% block content %}{% endblock %}
 </main>
+<script>
+(function() {
+    var t = localStorage.getItem('taskit-theme');
+    if (t) document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 </body>
 </html>

@@ -1052,6 +1052,7 @@ h3 { font-size: 0.9rem; font-weight: 600; color: var(--text); }
     max-width: 360px;
     background: var(--surface);
     border: 1px solid var(--border);
+    border-radius: var(--radius);
     padding: 2rem;
 }
 
