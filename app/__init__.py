@@ -44,6 +44,10 @@ def _ensure_columns(app):
             ],
             "users": [
                 ("theme", "VARCHAR(30) DEFAULT 'dark'"),
+                ("oidc_sub", "VARCHAR(255)"),
+                ("auth_method", "VARCHAR(20) DEFAULT 'local'"),
+                ("oidc_groups_hash", "VARCHAR(64)"),
+                ("is_sso_admin", "BOOLEAN DEFAULT 0"),
             ],
         }
         for table, cols in additions.items():
@@ -203,11 +207,17 @@ def create_app():
 
     @app.context_processor
     def inject_globals():
-        from .models import TASK_STATUSES, TASK_PRIORITIES, PROJECT_STATUSES, Notification
+        from .models import TASK_STATUSES, TASK_PRIORITIES, PROJECT_STATUSES, Notification, SsoSettings
 
         sidebar_projects = []
         unread_count = 0
         notifications = []
+        sso_enabled = False
+        try:
+            sso = SsoSettings.query.get(1)
+            sso_enabled = sso.enabled if sso else False
+        except Exception:
+            pass
         if current_user.is_authenticated:
             from .models import Project, ProjectPermission
             if current_user.can_manage_all_projects():
@@ -232,6 +242,7 @@ def create_app():
             "now": date.today().isoformat(),
             "unread_count": unread_count,
             "notifications": notifications,
+            "sso_enabled": sso_enabled,
         }
 
     with app.app_context():

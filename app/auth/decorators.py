@@ -41,3 +41,23 @@ def project_permission_required(level="viewer"):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+
+def sso_admin_permission(permission_key):
+    """Decorator that checks SSO admin permissions matrix.
+    Local admins/owners always pass. SSO admins check the specific permission."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for("auth.login"))
+            if current_user.is_admin or current_user.is_owner:
+                return f(*args, **kwargs)
+            if current_user.is_sso_admin:
+                from ..models import SsoAdminPermissions
+                perms = SsoAdminPermissions.query.get(1)
+                if perms and getattr(perms, permission_key, False):
+                    return f(*args, **kwargs)
+            abort(403)
+        return decorated_function
+    return decorator

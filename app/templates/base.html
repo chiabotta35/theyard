@@ -135,6 +135,7 @@
                 {% if current_user.can_manage_all_projects() %}
                 <a href="{{ url_for('auth.admin_users') }}" class="settings-panel-link {% if request.endpoint and ('admin_users' in request.endpoint or 'auth.admin' in request.endpoint) %}active{% endif %}">Users</a>
                 <a href="{{ url_for('auth.admin_groups') }}" class="settings-panel-link {% if request.endpoint and 'admin_group' in request.endpoint %}active{% endif %}">Groups</a>
+                <a href="{{ url_for('auth.admin_sso') }}" class="settings-panel-link {% if request.endpoint and ('admin_sso' in request.endpoint) %}active{% endif %}">SSO</a>
                 {% endif %}
             </div>
 
@@ -294,6 +295,7 @@ function setTheme(theme) {
         {% if current_user.can_manage_all_projects() %}
         { label: 'Manage Users', url: '{{ url_for("auth.admin_users") }}', group: 'Admin', icon: 'user' },
         { label: 'Manage Groups', url: '{{ url_for("auth.admin_groups") }}', group: 'Admin', icon: 'group' },
+        { label: 'SSO Settings', url: '{{ url_for("auth.admin_sso") }}', group: 'Admin', icon: 'sso' },
         {% endif %}
         { label: 'Create Project', url: '{{ url_for("projects.create_project") }}', group: 'Actions', icon: 'plus' },
     ];
@@ -310,6 +312,7 @@ function setTheme(theme) {
         user: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M2 13c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" stroke-width="1.2"/></svg>',
         group: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="5" cy="4" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="9" cy="4" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M1 12c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5" stroke="currentColor" stroke-width="1.2"/></svg>',
         plus: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 3v8M3 7h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',
+        sso: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M7 4v3l2 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',
     };
 
     function open() {

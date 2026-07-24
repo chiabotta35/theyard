@@ -12,11 +12,15 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(256), nullable=False)
+    password_hash = db.Column(db.String(256), nullable=True)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     is_owner = db.Column(db.Boolean, default=False, nullable=False)
     is_active_user = db.Column(db.Boolean, default=True, nullable=False)
     theme = db.Column(db.String(30), default="dark", nullable=False)
+    oidc_sub = db.Column(db.String(255), unique=True, nullable=True, index=True)
+    auth_method = db.Column(db.String(20), default="local", nullable=False)
+    oidc_groups_hash = db.Column(db.String(64), nullable=True)
+    is_sso_admin = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(
         db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
@@ -590,3 +594,55 @@ def notify(user_id, title, body=None, url=None):
         url=url,
     )
     db.session.add(entry)
+
+
+class SsoSettings(db.Model):
+    __tablename__ = "sso_settings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    enabled = db.Column(db.Boolean, default=False, nullable=False)
+    provider_name = db.Column(db.String(50), default="Authentik")
+    client_id = db.Column(db.String(255), default="")
+    client_secret = db.Column(db.String(255), default="")
+    discovery_url = db.Column(db.String(500), default="")
+    scopes = db.Column(db.String(255), default="openid email profile groups")
+    group_claim = db.Column(db.String(100), default="groups")
+    group_prefix = db.Column(db.String(50), default="taskit-")
+    auto_create_users = db.Column(db.Boolean, default=True, nullable=False)
+    jit_group_sync = db.Column(db.Boolean, default=True, nullable=False)
+    auto_create_groups = db.Column(db.Boolean, default=True, nullable=False)
+    admin_group_name = db.Column(db.String(255), default="")
+    allowed_groups = db.Column(db.String(500), default="")
+
+    @staticmethod
+    def get():
+        s = SsoSettings.query.get(1)
+        if not s:
+            s = SsoSettings(id=1)
+            db.session.add(s)
+            db.session.commit()
+        return s
+
+
+class SsoAdminPermissions(db.Model):
+    __tablename__ = "sso_admin_permissions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    manage_users = db.Column(db.Boolean, default=True, nullable=False)
+    manage_groups = db.Column(db.Boolean, default=True, nullable=False)
+    manage_projects = db.Column(db.Boolean, default=True, nullable=False)
+    manage_settings = db.Column(db.Boolean, default=False, nullable=False)
+    manage_webhooks = db.Column(db.Boolean, default=True, nullable=False)
+    manage_sso = db.Column(db.Boolean, default=False, nullable=False)
+    view_activity_log = db.Column(db.Boolean, default=True, nullable=False)
+    delete_projects = db.Column(db.Boolean, default=False, nullable=False)
+    manage_admins = db.Column(db.Boolean, default=False, nullable=False)
+
+    @staticmethod
+    def get():
+        p = SsoAdminPermissions.query.get(1)
+        if not p:
+            p = SsoAdminPermissions(id=1)
+            db.session.add(p)
+            db.session.commit()
+        return p

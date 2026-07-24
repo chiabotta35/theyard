@@ -15,6 +15,19 @@
             <span style="font-size:1.1rem;font-weight:600;letter-spacing:-0.02em">taskit</span>
         </div>
         <h1>Sign in to Taskit</h1>
+
+        {% if sso_enabled %}
+        <a href="{{ url_for('auth.sso_login') }}" class="btn btn-primary" style="width:100%;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M7 4v3l2 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Sign in with SSO
+        </a>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <div style="flex:1;height:1px;background:var(--border)"></div>
+            <span style="font-size:0.7rem;color:var(--text-dim);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.05em">or</span>
+            <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+        {% endif %}
+
         <form method="POST">
             {{ form.hidden_tag() }}
             <div class="form-group">

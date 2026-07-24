@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}SSO Settings — Taskit{% endblock %}
+{% block content %}
+<div class="content">
+    <div class="page-header">
+        <h1>SSO Settings</h1>
+        <div style="display:flex;gap:0.3rem">
+            <a href="{{ url_for('auth.admin_sso_permissions') }}" class="btn btn-ghost btn-sm">SSO Admin Permissions</a>
+        </div>
+    </div>
+
+    <form method="POST" style="max-width:640px">
+        {{ form.hidden_tag() }}
+
+        <div class="form-section">
+            <div class="mono-label" style="margin-bottom:0.75rem">PROVIDER</div>
+            <div class="form-group" style="display:flex;align-items:center;gap:0.75rem">
+                {{ form.enabled(style="width:16px;height:16px") }}
+                <label for="enabled" style="cursor:pointer;font-weight:500">Enable SSO</label>
+            </div>
+            <div class="form-group">
+                <label class="mono-label" for="provider_name">Provider Name</label>
+                {{ form.provider_name(id="provider_name", placeholder="Authentik", class="form-input") }}
+            </div>
+            <div class="form-group">
+                <label class="mono-label" for="discovery_url">Discovery URL</label>
+                {{ form.discovery_url(id="discovery_url", placeholder="https://auth.example.com/application/o/taskit/.well-known/openid-configuration", class="form-input") }}
+                <div style="font-size:0.65rem;color:var(--text-dim);margin-top:0.25rem">The .well-known/openid-configuration URL from your identity provider</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                <div class="form-group">
+                    <label class="mono-label" for="client_id">Client ID</label>
+                    {{ form.client_id(id="client_id", placeholder="client_id", class="form-input") }}
+                </div>
+                <div class="form-group">
+                    <label class="mono-label" for="client_secret">Client Secret</label>
+                    {{ form.client_secret(id="client_secret", placeholder="client_secret", class="form-input", type="password") }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="mono-label" for="scopes">Scopes</label>
+                {{ form.scopes(id="scopes", placeholder="openid email profile groups", class="form-input") }}
+            </div>
+        </div>
+
+        <div class="form-section" style="margin-top:1.5rem">
+            <div class="mono-label" style="margin-bottom:0.75rem">GROUP MAPPING</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                <div class="form-group">
+                    <label class="mono-label" for="group_claim">Group Claim Key</label>
+                    {{ form.group_claim(id="group_claim", placeholder="groups", class="form-input") }}
+                    <div style="font-size:0.65rem;color:var(--text-dim);margin-top:0.25rem">The claim key in the OIDC token that contains group info</div>
+                </div>
+                <div class="form-group">
+                    <label class="mono-label" for="group_prefix">Group Prefix Filter</label>
+                    {{ form.group_prefix(id="group_prefix", placeholder="taskit-", class="form-input") }}
+                    <div style="font-size:0.65rem;color:var(--text-dim);margin-top:0.25rem">Only sync groups starting with this prefix (e.g. taskit-admins, taskit-viewers)</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="mono-label" for="admin_group_name">Admin Group</label>
+                {{ form.admin_group_name(id="admin_group_name", placeholder="taskit-admins", class="form-input") }}
+                <div style="font-size:0.65rem;color:var(--text-dim);margin-top:0.25rem">OIDC group name that grants restricted admin access (must include prefix if filtering)</div>
+            </div>
+            <div class="form-group">
+                <label class="mono-label" for="allowed_groups">Allowed Groups</label>
+                {{ form.allowed_groups(id="allowed_groups", placeholder="taskit-users, taskit-admins", class="form-input") }}
+                <div style="font-size:0.65rem;color:var(--text-dim);margin-top:0.25rem">Comma-separated. If set, only users in these groups can log in. Leave empty to allow all.</div>
+            </div>
+        </div>
+
+        <div class="form-section" style="margin-top:1.5rem">
+            <div class="mono-label" style="margin-bottom:0.75rem">BEHAVIOR</div>
+            <div style="display:flex;flex-direction:column;gap:0.75rem">
+                <div class="form-group" style="display:flex;align-items:center;gap:0.75rem">
+                    {{ form.auto_create_users(style="width:16px;height:16px") }}
+                    <label for="auto_create_users" style="cursor:pointer">Auto-create users on first SSO login</label>
+                </div>
+                <div class="form-group" style="display:flex;align-items:center;gap:0.75rem">
+                    {{ form.jit_group_sync(style="width:16px;height:16px") }}
+                    <label for="jit_group_sync" style="cursor:pointer">Sync groups on every login (full sync)</label>
+                </div>
+                <div class="form-group" style="display:flex;align-items:center;gap:0.75rem">
+                    {{ form.auto_create_groups(style="width:16px;height:16px") }}
+                    <label for="auto_create_groups" style="cursor:pointer">Auto-create Taskit groups from filtered OIDC groups</label>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:1.5rem;display:flex;gap:0.5rem">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+            <a href="{{ url_for('auth.admin_users') }}" class="btn btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
